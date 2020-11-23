@@ -5,6 +5,8 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+globals [ created ]
+
 to red-team-ask-for-energy [ b n ]
   ask b [ if (energy > 6000) [ give-energy myself n ]]
 end
@@ -104,16 +106,21 @@ to red-team-shoot
 end
 
 to goRedExplorer
-  red-team-go-back-to-base
-  red-team-go-and-eat
+  ;red-team-go-back-to-base
+  ;red-team-go-and-eat
 
-  ifelse (not red-team-no-target?) [
-    red-team-call-rocket-launcher mem0 mem1 mem2
-    red-team-call-explorer mem0 mem1 mem2
-  ]
-  [ let h one-of perceive-robots ennemy
-    if ( h != nobody ) [ red-team-call-rocket-launcher [xcor] of h [ycor] of h [breed] of h]
-  ]
+  ;ifelse (not red-team-no-target?) [
+  ;  red-team-call-rocket-launcher mem0 mem1 mem2
+  ;  red-team-call-explorer mem0 mem1 mem2
+  ;]
+  ;[ let h one-of perceive-robots ennemy
+  ;  if ( h != nobody ) [ red-team-call-rocket-launcher [xcor] of h [ycor] of h [breed] of h]
+  ;]
+  
+  let food perceive-food
+  print food
+  random-move
+  
 end
 
 to goRedRocketLauncher
@@ -127,17 +134,23 @@ end
 
 to goRedHarvester
   ;; rentre à la base si certaines conditions sont vérifiées
-  red-team-go-back-to-base
+  ;red-team-go-back-to-base
   ;; cherche à manger
-  red-team-harvesters-go-and-eat
+  ;red-team-harvesters-go-and-eat
 end
 
 to goRedBase
-  set label energy
-  if (energy > 12000) [ new-RocketLauncher self ]
-  let t one-of perceive-specific-robots ennemy rocketlaunchers
-  if (t != nobody) [
-    launch-rocket towards t
+  ;set label energy
+  ;if (energy > 12000) [ new-RocketLauncher self ]
+  ;let t one-of perceive-specific-robots ennemy rocketlaunchers
+  ;if (t != nobody) [
+  ;  launch-rocket towards t
+  ;]
+  
+  if created <= 0
+  [
+    new-Explorer self
+    set created (created + 1)
   ]
 end
 
@@ -155,4 +168,5 @@ end
 
 ;; procedure pour initialiser les bases rouges
 to initRedBase
+  set created 0
 end

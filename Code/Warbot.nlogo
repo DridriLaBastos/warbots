@@ -1234,12 +1234,12 @@ BUTTON
 43
 Go
 go
-T
+NIL
 1
 T
 OBSERVER
 NIL
-NIL
+G
 NIL
 NIL
 1
@@ -1307,7 +1307,7 @@ CHOOSER
 display?
 display?
 "none" "energy" "missiles" "carrying-food?" "carried-walls-nrj" "mem0" "mem1" "mem2" "mem3" "mem4" "mem5"
-0
+2
 
 MONITOR
 30
