@@ -4,9 +4,7 @@
 ;; préfixe : red-team
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-globals [ created ]
-
+globals [ count_ ]
 to red-team-ask-for-energy [ b n ]
   ask b [ if (energy > 6000) [ give-energy myself n ]]
 end
@@ -117,10 +115,6 @@ to goRedExplorer
   ;  if ( h != nobody ) [ red-team-call-rocket-launcher [xcor] of h [ycor] of h [breed] of h]
   ;]
   
-  let food perceive-food
-  print food
-  random-move
-  
 end
 
 to goRedRocketLauncher
@@ -132,12 +126,48 @@ to goRedRocketLauncher
   if ((energy > 3000) and (nb-missiles < 5)) [ new-missile 1 ]
 end
 
+to dridriTeamHarvesterSearchFood
+  let b min-one-of perceive-food [ distance myself ]
+  
+  if b != nobody
+  [ take-food b ]
+  
+  if carrying-food? >= 500
+  [ set mem0 1 ]
+  
+  random-move
+end
+
+to dridriTeamHarvesterFeedBase
+  let targetBase min-one-of my-bases [ distance myself ]
+  
+  ;Si la base est dans le rayon de perception de l'agent lui donner la nourriture et reprendre la recherche
+  ;Sinon continuer à récolter de la nourriture
+  ifelse distance targetBase <= detection-range
+  [
+    give-food targetBase carrying-food?
+    set mem0 0
+  ]
+  [
+    set heading towards targetBase
+    forward-move speed
+    ;print targetBase
+  ]
+end
+
 to goRedHarvester
   ;; rentre à la base si certaines conditions sont vérifiées
   ;red-team-go-back-to-base
   ;; cherche à manger
   ;red-team-harvesters-go-and-eat
+  
+  ;; Cherche à manger
+  
+  if mem0 = 0 [ dridriTeamHarvesterSearchFood ]
+  if mem0 = 1 [ dridriTeamHarvesterFeedBase ]
+  
 end
+
 
 to goRedBase
   ;set label energy
@@ -147,10 +177,10 @@ to goRedBase
   ;  launch-rocket towards t
   ;]
   
-  if created <= 0
+  if mem0 != 0
   [
-    new-Explorer self
-    set created (created + 1)
+      new-Harvester self
+      set mem0 (mem0 - 1)
   ]
 end
 
@@ -168,5 +198,5 @@ end
 
 ;; procedure pour initialiser les bases rouges
 to initRedBase
-  set created 0
+  set mem0 10
 end
