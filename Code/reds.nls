@@ -141,7 +141,10 @@ to dridriTeamForwardMove
   ;]
   let i 0
   while [ free-ahead? speed != nobody and i < 12]
-  [ rt 30 ]
+  [
+    rt 30
+    set i i + 1
+  ]
   
   if free-ahead? speed = nobody [ forward-move speed ]
   
