@@ -4,7 +4,8 @@
 ;; préfixe : red-team
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-globals [ count_ ]
+globals [ count_ foodToGiveAmount ]
+
 to red-team-ask-for-energy [ b n ]
   ask b [ if (energy > 6000) [ give-energy myself n ]]
 end
@@ -126,46 +127,108 @@ to goRedRocketLauncher
   if ((energy > 3000) and (nb-missiles < 5)) [ new-missile 1 ]
 end
 
-to dridriTeamHarvesterSearchFood
-  let b min-one-of perceive-food [ distance myself ]
+to dridriTeamForwardMove
+  ;let speedToMove 0
+  ;let exit False
   
-  if b != nobody
-  [ take-food b ]
+  ;while [ (speedToMove != speed) and not exit ]
+  ;[
+  ;  if free-ahead? speedToMove != nobody
+  ;  [ set exit True ]
+  ;  
+  ;  if not exit
+  ;  [ set speedToMove (speedToMove + 1) ]
+  ;]
+  let i 0
+  while [ free-ahead? speed != nobody and i < 12]
+  [ rt 30 ]
   
-  if carrying-food? >= 500
-  [ set mem0 1 ]
+  if free-ahead? speed = nobody [ forward-move speed ]
+  
+end
+
+to dridriTeamRandomMove
+  ;right -20 + random 40
+  ;dridriTeamForwardMove
   
   random-move
 end
 
-to dridriTeamHarvesterFeedBase
-  let targetBase min-one-of my-bases [ distance myself ]
-  
-  ;Si la base est dans le rayon de perception de l'agent lui donner la nourriture et reprendre la recherche
-  ;Sinon continuer à récolter de la nourriture
-  ifelse distance targetBase <= detection-range
-  [
-    give-food targetBase carrying-food?
-    set mem0 0
+to dridriTeamHarvesterSearchFood
+  let f min-one-of perceive-food [ distance myself ]
+
+  while [(f != nobody) and (distance f <= 2)] [
+    take-food f
+    set f min-one-of perceive-food [ distance myself ]
   ]
+  
+  ;Retourner à la base pour une certaine quantité de nourriture transportée
+  if carrying-food? >= 1000
+  [ set mem0 1 ]
+  
+  ifelse f != nobody
   [
-    set heading towards targetBase
-    forward-move speed
-    ;print targetBase
+    set heading towards f
+    dridriTeamForwardMove
+  ]
+  [ dridriTeamRandomMove ]
+  
+  if mem1 = 1
+  [
+    let b min-one-of my-bases [ distance myself ]
+    
+    if distance b >= 2 * missile-range
+    [ set heading towards b ]
   ]
 end
 
+to dridriTeamHarvesterFeedBase
+  let targetBase min-one-of my-bases [ distance myself ]
+  set heading towards targetBase
+  
+  ;Plantage des graines dans les patches qui en ont le moins
+  if (distance targetBase <= missile-range) and (mem2 < 5)
+  [ 
+    ifelse mem3 = 0
+    [
+      let minSeed min-one-of neighbors with [ distance targetBase < missile-range ] [ count Seeds-here ]
+      ;ask minSeed [ set pcolor green ]
+      set mem3 list [pxcor] of minSeed [pycor] of minSeed
+    ]
+    [
+      let patchM3 patch (item 0 mem3) (item 1 mem3)
+      let currentPatch patch-here
+      
+      ifelse currentPatch = patchM3
+      [
+        plant-seeds color max-seeds
+        set mem3 0
+        ;ask patchM2 [ set pcolor black ]
+        set mem2 mem2 + 1
+      ]
+      [ set heading towards patchM3 ]
+    ]
+  ]
+  
+  ;On s'approche de la base jusqu'a la distance maximale à laquelle il est possible de lui donner de la nourriture puis on lui donne
+  ; et l'on repart à la recherche de nourriture
+  if distance targetBase <= 2
+  [
+    give-food targetBase carrying-food?
+   ;Repare à la recherche de nourriture 
+    set mem0 0
+    set mem1 1;A partir du moment où l'on a nourrit une base on reste dans son périmètre
+    set mem2 0
+    set mem3 0
+  ]
+  
+  dridriTeamForwardMove
+end
+
+;Se déplace aléatoirement. Quand ils trouvent de la nourriture en donne 80% à la base et plante ce qui reste
 to goRedHarvester
-  ;; rentre à la base si certaines conditions sont vérifiées
-  ;red-team-go-back-to-base
-  ;; cherche à manger
-  ;red-team-harvesters-go-and-eat
-  
-  ;; Cherche à manger
-  
   if mem0 = 0 [ dridriTeamHarvesterSearchFood ]
   if mem0 = 1 [ dridriTeamHarvesterFeedBase ]
-  
 end
 
 
@@ -179,8 +242,18 @@ to goRedBase
   
   if mem0 != 0
   [
+    ;if count_ > 0
+    ;[
       new-Harvester self
       set mem0 (mem0 - 1)
+      set count_ (count_ - 1)
+    ;]
+  ]
+  
+  if mem1 != 0
+  [
+    new-RocketLauncher self
+    set mem1 (mem1 - 1)
   ]
 end
 
@@ -196,7 +269,9 @@ end
 to initRedHarvester
 end
 
-;; procedure pour initialiser les bases rouges
+;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
-  set mem0 10
+  set foodToGiveAmount .8
+  set mem0 15
+  set count_ 1
 end
