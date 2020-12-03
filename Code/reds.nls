@@ -234,29 +234,80 @@ to goRedHarvester
   if mem0 = 1 [ dridriTeamHarvesterFeedBase ]
 end
 
-
-to goRedBase
-  ;set label energy
-  ;if (energy > 12000) [ new-RocketLauncher self ]
-  ;let t one-of perceive-specific-robots ennemy rocketlaunchers
-  ;if (t != nobody) [
-  ;  launch-rocket towards t
-  ;]
-  
+to dridriTeamCreateHarvesters
   if mem0 != 0
   [
-    ;if count_ > 0
-    ;[
-      new-Harvester self
-      set mem0 (mem0 - 1)
-      set count_ (count_ - 1)
-    ;]
+    new-Harvester self
+    set mem0 mem0 - 1
   ]
-  
+end
+
+to dridriTeamCreateExplorers
   if mem1 != 0
   [
-    new-RocketLauncher self
-    set mem1 (mem1 - 1)
+    new-Harvester self
+    set mem1 mem1 - 1
+  ]
+end
+
+to dridriTeamCreateRLaunchers
+  if mem2 != 0
+  [
+    new-Harvester self
+    set mem2 mem2 - 1
+  ]
+end
+
+to dridriTeamAskHarvesters [ n ]
+  set mem0 (mem0 + n)
+end
+
+;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
+to dridriTeamAskHarvesterCreationIfLow
+  let harvesterThreshold 5
+  let harvesterNumber count perceive-specific-robots color Harvesters
+  if harvesterNumber < harvesterThreshold
+  [ dridriTeamAskHarvesters 1 ]
+end
+
+to dridriTeamCreateBots
+  dridriTeamCreateHarvesters
+  dridriTeamCreateExplorers
+  dridriTeamCreateRLaunchers
+end
+
+to goRedBase
+  dridriTeamAskHarvesterCreationIfLow
+  dridriTeamCreateBots
+  let missileLaunchThreshold (min list missile-range detection-range) * .66
+  
+  ;Détection de tous les lanceurs de missiles ennemis à proximité
+  let ennemyTarget min-one-of (perceive-specific-robots ennemy RocketLaunchers) with [distance myself <= missileLaunchThreshold] [distance myself]
+  
+  ;Si l'on a trouvé un lanceur de missile on tire dessus quoi qu'il arrive.
+  ;Sinon on tire sur les énemis avec une probabilité d'autant plus grande qu'il est loin de la base
+  ifelse ennemyTarget != nobody
+  [
+    if nb-fafs = 0
+    [new-faf 1]
+    
+    launch-faf ennemyTarget
+  ]
+  [
+    set ennemyTarget min-one-of (perceive-robots ennemy) with [distance myself <= missileLaunchThreshold] [distance myself]
+    
+    if ennemyTarget != nobody
+    [
+      let probabilityNumber random-float missileLaunchThreshold
+      
+      if probabilityNumber >= distance ennemyTarget
+      [
+        if nb-fafs = 0
+        [new-faf 1]
+
+        launch-faf ennemyTarget
+      ]
+    ]
   ]
 end
 

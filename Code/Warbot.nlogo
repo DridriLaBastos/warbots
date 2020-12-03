@@ -1204,8 +1204,8 @@ GRAPHICS-WINDOW
 60
 -25
 25
-0
-0
+1
+1
 1
 ticks
 30.0
