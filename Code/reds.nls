@@ -5,6 +5,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 globals [ count_ foodToGiveAmount ]
+
 to goRedExplorer
 end
 
