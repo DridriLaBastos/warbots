@@ -152,6 +152,9 @@ globals [ victoire                     ;; 1 si victoire des verts / 2 si victoir
           wild-burger-max-nrj          ;; l'energie maximale d'un burger sauvage
           seeded-burger-min-nrj        ;; l'energie minimale d'un burger cultive
           seeded-burger-max-nrj        ;; l'energie maximale d'un burger cultive
+  givenThisTick
+  howManyGive
+  meanGiven
 ]
 
 to test-int
@@ -298,6 +301,12 @@ to go
   ; met à jour l'affichage des ressources globales des 2 equipes
   update_energy_watches
   tick
+  ifelse howManyGive = 0
+  [ set meanGiven 0 ]
+  [ set meanGiven  givenThisTick / howManyGive ]
+
+  set givenThisTick 0
+  set howManyGive 0
   if (ticks = duree) [ stop ]
 end
 
@@ -1415,6 +1424,24 @@ count Harvesters with [color = red]
 17
 1
 11
+
+PLOT
+1014
+20
+1461
+226
+Energy Given
+ticks
+Energy
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -13791810 true "" "plot meanGiven"
 
 @#$#@#$#@
 ## DE QUOI S'AGIT-IL?
