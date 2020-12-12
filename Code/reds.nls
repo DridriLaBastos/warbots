@@ -86,6 +86,8 @@ to dridriTeamHarvesterFeedBase
   ; et l'on repart à la recherche de nourriture
   if distance targetBase <= 2
   [
+    set givenThisTick givenThisTick + carrying-food?
+    set howManyGive howManyGive + 1
     give-food targetBase carrying-food?
    ;Repare à la recherche de nourriture 
     set mem0 0
@@ -125,7 +127,7 @@ to dridriTeamBaseConditionalyRequestSoldier
     if (energy > 10000) and (mem0 = 0)
     [
       dridriTeamBaseRequests 1 RocketLaunchers
-      set mem10 3 ;On créer un compteur pour laisser le temps à l'énergie de monter entre la création de chaque soldat
+      set mem10 50 ;On créer un compteur pour laisser le temps à l'énergie de monter entre la création de chaque soldat
       type self print "requested soldier"
     ]
   ]
@@ -136,8 +138,8 @@ end
 
 to dridriTeamBaseConditionalyRequestBots
   dridriTeamBaseConditionalyRequestHarvester
-  dridriTeamBaseConditionalyRequestSoldier
-  dridriTeamBaseConditionalyRequestExplorer
+  ;dridriTeamBaseConditionalyRequestSoldier
+  ;dridriTeamBaseConditionalyRequestExplorer
 end
 
 to dridriTeamBaseCreateHarvester
