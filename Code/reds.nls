@@ -36,8 +36,11 @@ to dridriTeamHarvesterSearchFood
   ]
   
   ;Retourner à la base pour une certaine quantité de nourriture transportée
-  if carrying-food? >= 2000
-  [ set mem0 1 ]
+  if carrying-food? >= mem4
+  [
+    set mem0 1
+    set mem4 2000
+  ]
   
   ifelse f != nobody
   [
@@ -191,6 +194,7 @@ end
 
 ;; procedure pour initialiser les rocket-launchers rouges
 to initRedHarvester
+  set mem4 500
 end
 
 ;; procedure pour initialiser les bases rougesinifinie
