@@ -4,7 +4,12 @@
 ;; préfixe : red-team
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-globals [ count_ foodToGiveAmount ]
+globals [ count_ ]
+
+;fonction atan(x), netlogo ne fournit que atan(x,y)
+to-report atan1 [ x ]
+  report atan x 1
+end
 
 to goRedExplorer
 end
@@ -21,6 +26,12 @@ to dridriTeamForwardMove
   ]
   
   if free-ahead? speed = nobody [ forward-move speed ]
+end
+
+to-report dridriTeamGetBreedCost [ b ]
+  if b = Harvesters [ report harvester-cost ]
+  if b = Explorers  [ report explorer-cost ]
+  if b = RocketLaunchers [ report rocket-launcher-cost ]
 end
 
 to dridriTeamRandomMove
@@ -106,30 +117,59 @@ to goRedHarvester
 end
 
 to dridriTeamBaseRequests [ n b ]
-  if b = Harvesters [ set mem0 mem0 + n ]
-  if b = RocketLaunchers [ set mem1 mem1 + n ]
-  if b = Explorers [ set mem2 mem2 + n ]
+  if b = Harvesters [ set mem0 max (list 0 (mem0 + n)) ]
+  if b = RocketLaunchers [ set mem1 max (list mem1 (mem1 + n)) ]
+  if b = Explorers [ set mem2 max (list 0 (mem2 + n)) ]
 end
+
+to dridriTeamBaseRequestHarvesters [ n ] dridriTeamBaseRequests n Harvesters end
+to dridriTeamBaseRequestExplorers [ n ] dridriTeamBaseRequests n Explorers end
 
 ;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
 to dridriTeamBaseConditionalyRequestHarvester
   let harvesterThreshold 5
   let harvesterNumber count perceive-specific-robots color Harvesters
   if harvesterNumber < harvesterThreshold
-  [ dridriTeamBaseRequests 1 Harvesters ]
+  [ dridriTeamBaseRequestHarvesters 1 ]
 end
 
+to dridriTeamBaseRequestSoldiers [ n ]
+  dridriTeamBaseRequests n RocketLaunchers
+  type self type " requested " type n print " soldiers"
+end
+
+to-report dridriTeamComputeFactor [ de ]
+  report atan1 de / 360
+end
+;La quantité de soldat a créer dépend de l'énergie que la base à reçu sur 100 ticks.
+;L'idée est d'utiliser une fraction de l'énergie reçu pour créer des soldats.
+;Au fur et à mesure que le temps avance, une fraction du plus en plus importante de l'énergie reçue sera utilisé car de plus en plus d'énergie est créée.
+;Au max 60% de l'énergie gagnée sur 100 ticks sera utilisée pour créer de nouveaux soldats. Ceci afin de pouvoir toujours avoir une quantité d'énergie qui augmente.
+
+;Si on a perdu de l'énergie  alors on enlèvera des soldats de la file d'attente
 to dridriTeamBaseConditionalyRequestSoldier
   ifelse mem10 > 0
   [ set mem10 mem10 - 1 ]
   [
-    ;On créer des soldats que s'il n'y a pas de harvester en demande et si l'énergie est supérieur à 10 000
-    if (energy > 10000) and (mem0 = 0)
+    ;Dans netlogo atant est dabs l'intervalle [0; 360], donc toujours positif. A la différence du vrai arctan qui peut être négatif
+    let dEnergy energy - mem11;La variation d'énergie entre il y a 100 ticks et maintenant
+    let f 0.60 * dridriTeamComputeFactor dEnergy
+    let newSoldierAmount f * dEnergy / dridriTeamGetBreedCost RocketLaunchers
+    
+    if mem9 = 1
     [
-      dridriTeamBaseRequests 1 RocketLaunchers
-      set mem10 50 ;On créer un compteur pour laisser le temps à l'énergie de monter entre la création de chaque soldat
-      type self print "requested soldier"
+     type self type "dE=" type dEnergy type "   f=" type f type "   s=" type newSoldierAmount type "\n"
     ]
+    
+    let soldierAmountToRequest floor newSoldierAmount
+    
+    if newSoldierAmount < 0
+    [ set soldierAmountToRequest  int newSoldierAmount ]
+    
+    if soldierAmountToRequest != 0
+    [ dridriTeamBaseRequestSoldiers soldierAmountToRequest ]
+    set mem10 100
+    set mem11 energy;
   ]
 end
 
@@ -138,7 +178,7 @@ end
 
 to dridriTeamBaseConditionalyRequestBots
   dridriTeamBaseConditionalyRequestHarvester
-  ;dridriTeamBaseConditionalyRequestSoldier
+  dridriTeamBaseConditionalyRequestSoldier
   ;dridriTeamBaseConditionalyRequestExplorer
 end
 
@@ -197,7 +237,7 @@ to dridriTeamBaseLaunchFAF
       if probabilityNumber >= distance ennemyTarget
       [
         if nb-fafs = 0
-        [new-faf 1]
+        [ new-faf 1 ]
 
         launch-faf ennemyTarget
       ]
@@ -227,5 +267,12 @@ end
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
   set mem0 15
+  set mem10 100
+  set mem11 energy
+  if printCount = 0
+  [
+    set mem9 1
+    set printCount 1
+  ]
   set count_ 1
 end
