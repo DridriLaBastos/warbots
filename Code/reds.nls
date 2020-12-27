@@ -8,7 +8,7 @@ globals [ count_ ]
 
 ;fonction atan(x), netlogo ne fournit que atan(x,y)
 to-report atan1 [ x ]
-  report atan x 1
+  report 1 - atan 1 x * 2 / 180
 end
 
 to goRedExplorer
@@ -121,28 +121,35 @@ end
 
 to dridriTeamBaseRequests [ n b ]
   if b = Harvesters [ set mem0 max (list 0 (mem0 + n)) ]
-  if b = RocketLaunchers [ set mem1 max (list mem1 (mem1 + n)) ]
+  if b = RocketLaunchers [ set mem1 max (list 0 (mem1 + n)) ]
   if b = Explorers [ set mem2 max (list 0 (mem2 + n)) ]
 end
 
-to dridriTeamBaseRequestHarvesters [ n ] dridriTeamBaseRequests n Harvesters end
+to-report dridriTeamBaseGetHarvestersRequests report mem0 end
+to-report dridriTeamBaseGetSoldiersRequests report mem1 end
+to-report dridriTeamBaseGetExplorersRequests report mem2 end
+
+to dridriTeamBaseRequestHarvesters [ n ] if dridriTeamBaseGetHarvestersRequests > 0 [ type self type "asked Harvesters: " print n ] dridriTeamBaseRequests n Harvesters end
 to dridriTeamBaseRequestExplorers [ n ] dridriTeamBaseRequests n Explorers end
 
 ;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
 to dridriTeamBaseConditionalyRequestHarvester
   let harvesterThreshold 5
   let harvesterNumber count perceive-specific-robots color Harvesters
-  if harvesterNumber < harvesterThreshold
+  ifelse harvesterNumber < harvesterThreshold
   [ dridriTeamBaseRequestHarvesters 1 ]
+  [ dridriTeamBaseRequestHarvesters -1 ]
 end
 
 to dridriTeamBaseRequestSoldiers [ n ]
+  let temp mem1
   dridriTeamBaseRequests n RocketLaunchers
   type self type " requested " type n print " soldiers"
+  type "mem1 " type temp type " --> " print mem1
 end
 
 to-report dridriTeamComputeFactor [ de ]
-  report atan1 de / 360
+  report atan1 de / 3
 end
 ;La quantité de soldat a créer dépend de l'énergie que la base à reçu sur 100 ticks.
 ;L'idée est d'utiliser une fraction de l'énergie reçu pour créer des soldats.
@@ -151,27 +158,19 @@ end
 
 ;Si on a perdu de l'énergie  alors on enlèvera des soldats de la file d'attente
 to dridriTeamBaseConditionalyRequestSoldier
-  ifelse mem10 > 0
-  [ set mem10 mem10 - 1 ]
+  if ticks mod 400 = 0
   [
-    ;Dans netlogo atant est dabs l'intervalle [0; 360], donc toujours positif. A la différence du vrai arctan qui peut être négatif
-    let dEnergy energy - mem11;La variation d'énergie entre il y a 100 ticks et maintenant
+    let dEnergy energy - mem11;mem11 = la variation d'énergie
     let f 0.60 * dridriTeamComputeFactor dEnergy
-    let newSoldierAmount f * dEnergy / dridriTeamGetBreedCost RocketLaunchers
+    let newSoldierAmount 0.60 * dEnergy / dridriTeamGetBreedCost RocketLaunchers
     
     if mem9 = 1
-    [
-     type self type "dE=" type dEnergy type "   f=" type f type "   s=" type newSoldierAmount type "\n"
-    ]
+    [ type self type "dE=" type dEnergy type "   f=" type f type "   s=" type newSoldierAmount type "\n" ]
     
     let soldierAmountToRequest floor newSoldierAmount
     
-    if newSoldierAmount < 0
-    [ set soldierAmountToRequest  int newSoldierAmount ]
-    
     if soldierAmountToRequest != 0
     [ dridriTeamBaseRequestSoldiers soldierAmountToRequest ]
-    set mem10 100
     set mem11 energy;
   ]
 end
@@ -271,7 +270,6 @@ end
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
   set mem0 15
-  set mem10 100
   set mem11 energy
   if printCount = 0
   [
