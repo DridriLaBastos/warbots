@@ -19,9 +19,9 @@ end
 
 to dridriTeamForwardMove
   let i 0
-  while [ free-ahead? speed != nobody and i < 12]
+  while [ free-ahead? speed != nobody and i < 3]
   [
-    rt 30
+    rt 120
     set i i + 1
   ]
   
@@ -129,16 +129,19 @@ to-report dridriTeamBaseGetHarvestersRequests report mem0 end
 to-report dridriTeamBaseGetSoldiersRequests report mem1 end
 to-report dridriTeamBaseGetExplorersRequests report mem2 end
 
-to dridriTeamBaseRequestHarvesters [ n ] if dridriTeamBaseGetHarvestersRequests > 0 [ type self type "asked Harvesters: " print n ] dridriTeamBaseRequests n Harvesters end
+to dridriTeamBaseRequestHarvesters [ n ] type self type "asked Harvesters: " print n dridriTeamBaseRequests n Harvesters end
 to dridriTeamBaseRequestExplorers [ n ] dridriTeamBaseRequests n Explorers end
 
 ;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
 to dridriTeamBaseConditionalyRequestHarvester
-  let harvesterThreshold 5
+  let harvesterThreshold 2
   let harvesterNumber count perceive-specific-robots color Harvesters
   ifelse harvesterNumber < harvesterThreshold
   [ dridriTeamBaseRequestHarvesters 1 ]
-  [ dridriTeamBaseRequestHarvesters -1 ]
+  [
+    if dridriTeamBaseGetHarvestersRequests > 0
+    [ dridriTeamBaseRequestHarvesters -1 ]
+  ]
 end
 
 to dridriTeamBaseRequestSoldiers [ n ]
@@ -269,7 +272,7 @@ end
 
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
-  set mem0 15
+  ;dridriTeamBaseRequestHarvesters 15
   set mem11 energy
   if printCount = 0
   [

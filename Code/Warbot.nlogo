@@ -266,7 +266,7 @@ to go
   ]
 
   ; pour toutes les bases
-  ask Bases [
+  ask Bases with [color = red] [
     ; teste si elles sont toujours en vie
     mort
     ; decremente le delai d'attente avant de pouvoir lancer un nouveau missile
@@ -276,9 +276,10 @@ to go
     ; affiche ou non un label sur l'agent
     display-label
     ; appelle la procedure d'activation correspondant a la couleur
-    ifelse (color = green)
-    [ carefully[goGreenBase][show error-message] ]
-    [ carefully[goRedBase][show error-message] ]
+    ;ifelse (color = green)
+    ;[ carefully[goGreenBase][show error-message] ]
+    ;[ carefully[goRedBase][show error-message] ]
+    carefully[goRedBase][show error-message]
   ]
 
   ; guidage des missiles
@@ -1250,7 +1251,7 @@ BUTTON
 43
 Go
 go
-T
+NIL
 1
 T
 OBSERVER
@@ -1289,7 +1290,7 @@ SWITCH
 132
 display-range?
 display-range?
-1
+0
 1
 -1000
 
@@ -1323,7 +1324,7 @@ CHOOSER
 display?
 display?
 "none" "energy" "missiles" "carrying-food?" "carried-walls-nrj" "mem0" "mem1" "mem2" "mem3" "mem4" "mem5"
-0
+6
 
 MONITOR
 30
@@ -1466,7 +1467,8 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot sum [energy] of Bases with [ color = red ]"
+"default" 1.0 0 -2674135 true "" "plot sum [energy] of Bases with [ color = red ]"
+"pen-1" 1.0 0 -13840069 true "" "plot sum [energy] of Bases with [ color = green ]"
 
 @#$#@#$#@
 ## DE QUOI S'AGIT-IL?
