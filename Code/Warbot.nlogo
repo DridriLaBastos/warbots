@@ -152,6 +152,12 @@ globals [ victoire                     ;; 1 si victoire des verts / 2 si victoir
           wild-burger-max-nrj          ;; l'energie maximale d'un burger sauvage
           seeded-burger-min-nrj        ;; l'energie minimale d'un burger cultive
           seeded-burger-max-nrj        ;; l'energie maximale d'un burger cultive
+
+  ;Dridri team to delete
+  givenThisTick
+  howManyGive
+  meanGiven
+  printCount
 ]
 
 to test-int
@@ -270,9 +276,10 @@ to go
     ; affiche ou non un label sur l'agent
     display-label
     ; appelle la procedure d'activation correspondant a la couleur
-    ifelse (color = green)
-    [ carefully[goGreenBase][show error-message] ]
-    [ carefully[goRedBase][show error-message] ]
+    ;ifelse (color = green)
+    ;[ carefully[goGreenBase][show error-message] ]
+    ;[ carefully[goRedBase][show error-message] ]
+    carefully[goRedBase][show error-message]
   ]
 
   ; guidage des missiles
@@ -298,7 +305,17 @@ to go
   ; met à jour l'affichage des ressources globales des 2 equipes
   update_energy_watches
   tick
+  dridriTeamTemp
   if (ticks = duree) [ stop ]
+end
+
+to dridriTeamTemp
+  ifelse howManyGive = 0
+  [ set meanGiven 0 ]
+  [ set meanGiven  givenThisTick / howManyGive ]
+
+  set givenThisTick 0
+  set howManyGive 0
 end
 
 to-report compute-energy [ c ]
@@ -1415,6 +1432,43 @@ count Harvesters with [color = red]
 17
 1
 11
+
+PLOT
+1014
+20
+1461
+226
+Energy Given
+ticks
+Energy
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -13791810 true "" "plot meanGiven"
+
+PLOT
+1018
+250
+1218
+400
+plot 2
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -2674135 true "" "plot sum [energy] of Bases with [ color = red ]"
+"pen-1" 1.0 0 -13840069 true "" "plot sum [energy] of Bases with [ color = green ]"
 
 @#$#@#$#@
 ## DE QUOI S'AGIT-IL?

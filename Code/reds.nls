@@ -4,17 +4,28 @@
 ;; préfixe : red-team
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-globals [ count_ foodToGiveAmount ]
+globals [ count_ ]
+
+;fonction atan(x), netlogo ne fournit que atan(x,y)
+to-report atan1 [ x ]
+  report 1 - atan 1 x * 2 / 180
+end
 
 to dridriTeamForwardMove
   let i 0
-  while [ free-ahead? speed != nobody and i < 12]
+  while [ free-ahead? speed != nobody and i < 3]
   [
-    rt 30
+    rt 120
     set i i + 1
   ]
   
   if free-ahead? speed = nobody [ forward-move speed ]
+end
+
+to-report dridriTeamGetBreedCost [ b ]
+  if b = Harvesters [ report harvester-cost ]
+  if b = Explorers  [ report explorer-cost ]
+  if b = RocketLaunchers [ report rocket-launcher-cost ]
 end
 
 to dridriTeamRandomMove
@@ -121,7 +132,6 @@ to dridriTeamHarvesterFeedBase
       [
         plant-seeds color max-seeds
         set mem3 0
-        ;ask patchM2 [ set pcolor black ]
         set mem2 mem2 + 1
       ]
       [ set heading towards patchM3 ]
@@ -132,6 +142,8 @@ to dridriTeamHarvesterFeedBase
   ; et l'on repart à la recherche de nourriture
   if distance targetBase <= 2
   [
+    set givenThisTick givenThisTick + carrying-food?
+    set howManyGive howManyGive + 1
     give-food targetBase carrying-food?
    ;Repare à la recherche de nourriture 
     set mem0 0
@@ -149,52 +161,106 @@ to goRedHarvester
   if mem0 = 1 [ dridriTeamHarvesterFeedBase ]
 end
 
-to dridriTeamCreateHarvesters
-  if mem0 != 0
+to dridriTeamBaseRequests [ n b ]
+  if b = Harvesters [ set mem0 max (list 0 (mem0 + n)) ]
+  if b = RocketLaunchers [ set mem1 max (list 0 (mem1 + n)) ]
+  if b = Explorers [ set mem2 max (list 0 (mem2 + n)) ]
+end
+
+to-report dridriTeamBaseGetHarvestersRequests report mem0 end
+to-report dridriTeamBaseGetSoldiersRequests report mem1 end
+to-report dridriTeamBaseGetExplorersRequests report mem2 end
+
+to dridriTeamBaseRequestHarvesters [ n ] type self type "asked Harvesters: " print n dridriTeamBaseRequests n Harvesters end
+to dridriTeamBaseRequestExplorers [ n ] dridriTeamBaseRequests n Explorers end
+
+;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
+to dridriTeamBaseConditionalyRequestHarvester
+  let harvesterThreshold 2
+  let harvesterNumber count perceive-specific-robots color Harvesters
+  ifelse harvesterNumber < harvesterThreshold
+  [ dridriTeamBaseRequestHarvesters 1 ]
+  [
+    if dridriTeamBaseGetHarvestersRequests > 0
+    [ dridriTeamBaseRequestHarvesters -1 ]
+  ]
+end
+
+to dridriTeamBaseRequestSoldiers [ n ]
+  let temp mem1
+  dridriTeamBaseRequests n RocketLaunchers
+  type self type " requested " type n print " soldiers"
+  type "mem1 " type temp type " --> " print mem1
+end
+
+to-report dridriTeamComputeFactor [ de ]
+  report atan1 de / 3
+end
+;La quantité de soldat a créer dépend de l'énergie que la base à reçu sur 100 ticks.
+;L'idée est d'utiliser une fraction de l'énergie reçu pour créer des soldats.
+;Au fur et à mesure que le temps avance, une fraction du plus en plus importante de l'énergie reçue sera utilisé car de plus en plus d'énergie est créée.
+;Au max 60% de l'énergie gagnée sur 100 ticks sera utilisée pour créer de nouveaux soldats. Ceci afin de pouvoir toujours avoir une quantité d'énergie qui augmente.
+
+;Si on a perdu de l'énergie  alors on enlèvera des soldats de la file d'attente
+to dridriTeamBaseConditionalyRequestSoldier
+  if ticks mod 400 = 0
+  [
+    let dEnergy energy - mem11;mem11 = la variation d'énergie
+    let f 0.60 * dridriTeamComputeFactor dEnergy
+    let newSoldierAmount 0.60 * dEnergy / dridriTeamGetBreedCost RocketLaunchers
+    
+    if mem9 = 1
+    [ type self type "dE=" type dEnergy type "   f=" type f type "   s=" type newSoldierAmount type "\n" ]
+    
+    let soldierAmountToRequest floor newSoldierAmount
+    
+    if soldierAmountToRequest != 0
+    [ dridriTeamBaseRequestSoldiers soldierAmountToRequest ]
+    set mem11 energy;
+  ]
+end
+
+to dridriTeamBaseConditionalyRequestExplorer
+end
+
+to dridriTeamBaseConditionalyRequestBots
+  dridriTeamBaseConditionalyRequestHarvester
+  dridriTeamBaseConditionalyRequestSoldier
+  ;dridriTeamBaseConditionalyRequestExplorer
+end
+
+to dridriTeamBaseCreateHarvester
+  if mem0 > 0
   [
     new-Harvester self
     set mem0 mem0 - 1
   ]
 end
 
-to dridriTeamCreateExplorers
-  if mem1 != 0
+to dridriTeamBaseCreateRLauncher
+  if mem1 > 0
   [
-    new-Explorer self
+    new-RocketLauncher self
     set mem1 mem1 - 1
   ]
 end
 
-to dridriTeamCreateRLaunchers
-  if mem2 != 0
-  [
-    new-RocketLauncher self
-    set mem2 mem2 - 1
-  ]
-end
-
-to dridriTeamAskHarvesters [ n ]
-  set mem0 (mem0 + n)
-end
-
 ;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
 to dridriTeamAskHarvesterCreationIfLow
-  ;let harvesterThreshold 5
-  ;let harvesterNumber count perceive-specific-robots color Harvesters
-  ;if harvesterNumber < harvesterThreshold
-  ;[ dridriTeamAskHarvesters 1 ]
+  let harvesterThreshold 5
+  let harvesterNumber count perceive-specific-robots color Harvesters
+  if harvesterNumber < harvesterThreshold
+  [ dridriTeamAskHarvesters 1 ]
 end
 
-to dridriTeamCreateBots
-  dridriTeamCreateHarvesters
-  dridriTeamCreateExplorers
-  dridriTeamCreateRLaunchers
+to dridriTeamBaseCreateBots
+  dridriTeamBaseCreateHarvester
+  dridriTeamBaseCreateRLauncher
+  dridriTeamBaseCreateExplorer
 end
 
-to goRedBase
-  dridriTeamAskHarvesterCreationIfLow
-  dridriTeamCreateBots
-  let missileLaunchThreshold (min list missile-range detection-range) * .66
+to dridriTeamBaseLaunchFAF
+   let missileLaunchThreshold (min list missile-range detection-range) * .66
   
   ;Détection de tous les lanceurs de missiles ennemis à proximité
   let ennemyTarget min-one-of (perceive-specific-robots ennemy RocketLaunchers) with [distance myself <= missileLaunchThreshold] [distance myself]
@@ -218,12 +284,19 @@ to goRedBase
       if probabilityNumber >= distance ennemyTarget
       [
         if nb-fafs = 0
-        [new-faf 1]
+        [ new-faf 1 ]
 
         launch-faf ennemyTarget
       ]
     ]
   ]
+end
+
+to goRedBase
+  dridriTeamBaseConditionalyRequestBots
+  dridriTeamBaseCreateBots
+
+  dridriTeamBaseLaunchFAF
 end
 
 ;; procedure pour initialiser les explorers rouges
@@ -241,9 +314,12 @@ end
 
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
-  if count_ < 1
+  dridriTeamBaseRequestHarvesters 15
+  set mem11 energy
+  if printCount = 0
   [
-    set mem1 1
-    set count_ 50
+    set mem9 1
+    set printCount 1
   ]
+  set count_ 1
 end
