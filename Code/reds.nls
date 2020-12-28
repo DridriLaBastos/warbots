@@ -27,14 +27,14 @@ to dridriTeamExplorerSearchEnemyBases
   
   if enemyBase != nobody
   [
-    set mem1 enemyBase
     set mem0 1
+    set mem1 enemyBase
+    set mem2 min-one-of my-bases [ distance myself ]
   ]
 end
 
 ;On récupère une base qui n'a pas de coodonnées pour les bases énemies
 to dridriTeamExplorerRevealEnemyBase
-  set mem2 min-one-of my-bases [ distance myself ]
   set heading towards mem2
   dridriTeamForwardMove
   
@@ -47,10 +47,16 @@ to dridriTeamExplorerRevealEnemyBase
     
     ifelse enemyBases = 0
     [ set enemyBases (list mem1) ]
-    [ if length enemyBases = 1 [ set enemyBases lput mem1 enemyBases ] ]
+    [ if (length enemyBases = 1) and (item 0 enemyBases != mem1) [ set enemyBases lput mem1 enemyBases ] ]
     
     ask mem2 [ set mem10 enemyBases ]
     set mem2 one-of my-bases with [ self != [mem2] of myself ]
+    set mem3 (mem3 + 1)
+    if mem3 = 2
+    [
+      set mem0 0
+      set mem3 0
+    ]
   ]
 end
 

@@ -260,7 +260,7 @@ to go
   ]
 
   ; pour toutes les bases
-  ask Bases [
+  ask Bases with [ color = red ][
     ; teste si elles sont toujours en vie
     mort
     ; decremente le delai d'attente avant de pouvoir lancer un nouveau missile

@@ -10,4 +10,5 @@
 # Explorer
 * mem0 : mode de fonctionnement
 * mem1 : base énemie repérée
-* mem2: base allié vers laquelle aller
+* mem2 : base allié vers laquelle aller
+* mem3 : nombre de bases à laquelle l'information courrante a été donné
