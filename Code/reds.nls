@@ -167,12 +167,7 @@ to dridriTeamBaseRequests [ n b ]
   if b = Explorers [ set mem2 max (list 0 (mem2 + n)) ]
 end
 
-to-report dridriTeamBaseGetHarvestersRequests report mem0 end
-to-report dridriTeamBaseGetSoldiersRequests report mem1 end
-to-report dridriTeamBaseGetExplorersRequests report mem2 end
-
 to dridriTeamBaseRequestHarvesters [ n ] type self type "asked Harvesters: " print n dridriTeamBaseRequests n Harvesters end
-to dridriTeamBaseRequestExplorers [ n ] dridriTeamBaseRequests n Explorers end
 
 ;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
 to dridriTeamBaseConditionalyRequestHarvester
@@ -181,7 +176,7 @@ to dridriTeamBaseConditionalyRequestHarvester
   ifelse harvesterNumber < harvesterThreshold
   [ dridriTeamBaseRequestHarvesters 1 ]
   [
-    if dridriTeamBaseGetHarvestersRequests > 0
+    if mem0 > 0
     [ dridriTeamBaseRequestHarvesters -1 ]
   ]
 end
@@ -220,13 +215,16 @@ to dridriTeamBaseConditionalyRequestSoldier
   ]
 end
 
+to dridriTeamBaseRequestExplorers [ n ] dridriTeamBaseRequests n Explorers end
 to dridriTeamBaseConditionalyRequestExplorer
+  if ((mem10 = 0) or (length mem10 != 2)) and (ticks mod 400 = 0)
+  [ dridriTeamBaseRequestExplorers 1 ]
 end
 
 to dridriTeamBaseConditionalyRequestBots
   dridriTeamBaseConditionalyRequestHarvester
   dridriTeamBaseConditionalyRequestSoldier
-  ;dridriTeamBaseConditionalyRequestExplorer
+  dridriTeamBaseConditionalyRequestExplorer
 end
 
 to dridriTeamBaseCreateHarvester
@@ -237,7 +235,7 @@ to dridriTeamBaseCreateHarvester
   ]
 end
 
-to dridriTeamBaseCreateRLauncher
+to dridriTeamBaseCreateSoldier
   if mem1 > 0
   [
     new-RocketLauncher self
@@ -245,18 +243,19 @@ to dridriTeamBaseCreateRLauncher
   ]
 end
 
-;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
-to dridriTeamAskHarvesterCreationIfLow
-  let harvesterThreshold 5
-  let harvesterNumber count perceive-specific-robots color Harvesters
-  if harvesterNumber < harvesterThreshold
-  [ dridriTeamAskHarvesters 1 ]
+to dridriTeamBaseCreateExplorer
+  if mem2 > 0
+  [
+    new-Explorer self
+    set mem2 mem2 - 1
+    type self print "created 1 explorer"
+  ]
 end
 
 to dridriTeamBaseCreateBots
-  dridriTeamBaseCreateHarvester
-  dridriTeamBaseCreateRLauncher
-  dridriTeamBaseCreateExplorer
+  if create-ok? [ dridriTeamBaseCreateHarvester ]
+  if create-ok? [ dridriTeamBaseCreateSoldier ]
+  if create-ok? [ dridriTeamBaseCreateExplorer ]
 end
 
 to dridriTeamBaseLaunchFAF
