@@ -78,8 +78,54 @@ to goRedExplorer
   if mem0 = 1 [ dridriTeamExplorerRevealEnemyBase ]
 end
 
-to goRedRocketLauncher
+;;;;;;;;;;;;;;;;;;;;;
+;; --- SOLDIER --- ;;
+;;;;;;;;;;;;;;;;;;;;;
 
+to dridriTeamSoldierGoToMeetPoint
+  ifelse distance mem3 <= 4
+  [ set mem0 1 ]
+  [
+    set heading towards mem3
+    dridriTeamForwardMove
+  ]
+end
+
+to dridriTeamSoldierSwitchToAttack [ baseTarget ]
+  set mem0 2
+  set mem4 baseTarget
+  type self print "attacking"
+end
+
+to dridriTeamSoldierWaitForAttack
+  let soldierAround perceive-specific-robots color RocketLaunchers
+  let headingPatch patch (mean [xcor] of soldierAround) (mean [ycor] of soldierAround)
+  set heading towards headingPatch
+  dridriteamForwardMove
+  
+  if count soldierAround >= 10
+  [
+    let baseTarget one-of (list mem1 mem2)
+    
+    dridriTeamSoldierSwitchToAttack baseTarget
+    ask soldierAround with [ mem0 != 2 ]
+    [ dridriTeamSoldierSwitchToAttack baseTarget ]
+  ]
+end
+
+to dridriSoldierAttack
+  ifelse distance mem4 > missile-range 
+  [
+    set heading towards mem4
+    dridriTeamForwardMove
+  ]
+  [ launch-rocket towardsxy [xcor] of mem4 [ycor] of mem4 ]
+end
+
+to goRedRocketLauncher
+  if mem0 = 0 [ dridriTeamSoldierGoToMeetPoint ]
+  if mem0 = 1 [ dridriTeamSoldierWaitForAttack ]
+  if mem0 = 2 [ dridriSoldierAttack ]
 end
 
 to dridriTeamHarvesterSearchFood
@@ -252,8 +298,8 @@ end
 
 to dridriTeamBaseCreateBots
   if create-ok? [ dridriTeamBaseCreateHarvester ]
-  ;if create-ok? [ dridriTeamBaseCreateSoldier ]
-  if create-ok? [ dridriTeamBaseCreateExplorer ]
+  if create-ok? [ dridriTeamBaseCreateSoldier ]
+  ;if create-ok? [ dridriTeamBaseCreateExplorer ]
 end
 
 to dridriTeamBaseLaunchFAF
@@ -302,6 +348,21 @@ end
 
 ;; procedure pour initialiser les rocket-launchers rouges
 to initRedRocketLauncher
+  let aBase one-of my-bases
+  
+  set mem1 [ item 0 mem10 ] of aBase
+  set mem2 [ item 1 mem10 ] of aBase
+  
+  let meetPoint (list 0 0)
+  let xCorMeetPoint mean [xcor] of my-bases - 10
+  let yCorMeetPoint mean [ycor] of my-bases
+  
+  set mem3 patch xCorMeetPoint yCorMeetPoint
+  
+  set heading towards mem3
+  
+  ask mem3
+  [ set pcolor green ]
 end
 
 ;; procedure pour initialiser les rocket-launchers rouges
@@ -311,12 +372,6 @@ end
 
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
-  dridriTeamBaseRequestHarvesters 15
-  set mem11 energy
-  if printCount = 0
-  [
-    set mem9 1
-    set printCount 1
-  ]
-  set count_ 1
+  dridriTeamBaseRequestHarvesters 5
+  set mem10 (list (base 4) (base 6))
 end

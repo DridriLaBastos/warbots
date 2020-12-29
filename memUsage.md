@@ -9,6 +9,8 @@
 ## Rocket Launcher
 * mem0 : mode de fonctionnement
 * mem[1-2] : coordonnées des bases énemies
+* mem3 : coordonnées d'un point de rassemblement
+* mem4 : la base qui est ciblée
 * mem5 : le patch vers lequel se déplacer
 ## Explorer
 * mem0 : mode de fonctionnement
