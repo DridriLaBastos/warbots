@@ -29,7 +29,9 @@ to-report dridriTeamGetBreedCost [ b ]
 end
 
 to dridriTeamRandomMove
-  random-move
+  let patchDir min-one-of neighbors in-cone 5 135 [ count Seeds-here ]
+  set heading towards patchDir
+  dridriTeamForwardMove
 end
 
 to dridriTeamExplorerSearchEnemyBases
@@ -106,7 +108,7 @@ to dridriTeamHarvesterSearchFood
   [
     let b min-one-of my-bases [ distance myself ]
     
-    if distance b >= 2 * missile-range
+    if distance b >= missile-range
     [ set heading towards b ]
   ]
 end
@@ -167,7 +169,7 @@ to dridriTeamBaseRequests [ n b ]
   if b = Explorers [ set mem2 max (list 0 (mem2 + n)) ]
 end
 
-to dridriTeamBaseRequestHarvesters [ n ] type self type "asked Harvesters: " print n dridriTeamBaseRequests n Harvesters end
+to dridriTeamBaseRequestHarvesters [ n ] dridriTeamBaseRequests n Harvesters end
 
 ;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
 to dridriTeamBaseConditionalyRequestHarvester
@@ -182,10 +184,7 @@ to dridriTeamBaseConditionalyRequestHarvester
 end
 
 to dridriTeamBaseRequestSoldiers [ n ]
-  let temp mem1
   dridriTeamBaseRequests n RocketLaunchers
-  type self type " requested " type n print " soldiers"
-  type "mem1 " type temp type " --> " print mem1
 end
 
 to-report dridriTeamComputeFactor [ de ]
@@ -201,11 +200,11 @@ to dridriTeamBaseConditionalyRequestSoldier
   if ticks mod 400 = 0
   [
     let dEnergy energy - mem11;mem11 = la variation d'énergie
-    let f 0.60 * dridriTeamComputeFactor dEnergy
+    ;let f 0.60 * dridriTeamComputeFactor dEnergy
     let newSoldierAmount 0.60 * dEnergy / dridriTeamGetBreedCost RocketLaunchers
     
-    if mem9 = 1
-    [ type self type "dE=" type dEnergy type "   f=" type f type "   s=" type newSoldierAmount type "\n" ]
+    ;if mem9 = 1
+    ;[ type self type "dE=" type dEnergy type "   f=" type f type "   s=" type newSoldierAmount type "\n" ]
     
     let soldierAmountToRequest floor newSoldierAmount
     
@@ -248,13 +247,12 @@ to dridriTeamBaseCreateExplorer
   [
     new-Explorer self
     set mem2 mem2 - 1
-    type self print "created 1 explorer"
   ]
 end
 
 to dridriTeamBaseCreateBots
   if create-ok? [ dridriTeamBaseCreateHarvester ]
-  if create-ok? [ dridriTeamBaseCreateSoldier ]
+  ;if create-ok? [ dridriTeamBaseCreateSoldier ]
   if create-ok? [ dridriTeamBaseCreateExplorer ]
 end
 
