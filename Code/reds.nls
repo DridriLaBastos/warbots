@@ -22,6 +22,16 @@ to dridriTeamForwardMove
   if free-ahead? speed = nobody [ forward-move speed ]
 end
 
+to-report dridriTeamMoveToTarget [ d ]
+  ifelse distance mem5 > d
+  [
+    set heading towards mem5
+    dridriTeamForwardMove
+    report false
+  ]
+  [ report true ]
+end
+
 to-report dridriTeamGetBreedCost [ b ]
   if b = Harvesters [ report harvester-cost ]
   if b = Explorers  [ report explorer-cost ]
@@ -34,6 +44,10 @@ to dridriTeamRandomMove
   dridriTeamForwardMove
 end
 
+;;;;;;;;;;;;;;;;;;;;;;
+;; --- EXPLORER --- ;;
+;;;;;;;;;;;;;;;;;;;;;;
+
 to dridriTeamExplorerSearchEnemyBases
   dridriTeamRandomMove
   let enemyBase one-of perceive-base ennemy
@@ -42,28 +56,25 @@ to dridriTeamExplorerSearchEnemyBases
   [
     set mem0 1
     set mem1 enemyBase
-    set mem2 min-one-of my-bases [ distance myself ]
+    set mem5 min-one-of my-bases [ distance myself ]
   ]
 end
 
 ;On récupère une base qui n'a pas de coodonnées pour les bases énemies
 to dridriTeamExplorerRevealEnemyBase
-  set heading towards mem2
-  dridriTeamForwardMove
-  
   ; Une fois que l'on est arrivé à distance de communication d'une base, on vérifie qu'elle ne contient pas déjà la position
   ; de la base que l'on contient et on lui donne cette info
   ; dans tous les cas on se dirige vers la base suivante pour lui passer la position de la base que l'on a trouvé
-  if distance mem2 <= detection-range
+  if dridriTeamMoveToTarget [detection-range] of mem5
   [
-    let enemyBases [mem10] of mem2
+    let enemyBases [mem10] of mem5
     
     ifelse enemyBases = 0
     [ set enemyBases (list mem1) ]
     [ if (length enemyBases = 1) and (item 0 enemyBases != mem1) [ set enemyBases lput mem1 enemyBases ] ]
     
-    ask mem2 [ set mem10 enemyBases ]
-    set mem2 one-of my-bases with [ self != [mem2] of myself ]
+    ask mem5 [ set mem10 enemyBases ]
+    set mem5 one-of my-bases with [ self != [mem5] of myself ]
     set mem3 (mem3 + 1)
     if mem3 = 2
     [
@@ -83,18 +94,13 @@ end
 ;;;;;;;;;;;;;;;;;;;;;
 
 to dridriTeamSoldierGoToMeetPoint
-  ifelse distance mem3 <= 4
+  if dridriTeamMoveToTarget 1
   [ set mem0 1 ]
-  [
-    set heading towards mem3
-    dridriTeamForwardMove
-  ]
 end
 
 to dridriTeamSoldierSwitchToAttack [ baseTarget ]
   set mem0 2
-  set mem4 baseTarget
-  type self print "attacking"
+  set mem5 baseTarget
 end
 
 to dridriTeamSoldierWaitForAttack
@@ -114,18 +120,39 @@ to dridriTeamSoldierWaitForAttack
 end
 
 to dridriSoldierAttack
-  ifelse distance mem4 > missile-range 
+  if dridriTeamMoveToTarget missile-range
   [
-    set heading towards mem4
-    dridriTeamForwardMove
+    ifelse nb-missiles > 0
+    [ launch-rocket towardsxy [xcor] of mem5 [ycor] of mem5 ]
+    [
+      ifelse nb-fafs > 0
+      [ launch-faf mem5 ]
+      [
+        set mem5 min-one-of my-bases [ distance myself ]
+        set mem0 3
+      ]
+    ]
   ]
-  [ launch-rocket towardsxy [xcor] of mem4 [ycor] of mem4 ]
+end
+
+to dridriTeamSoldierReturnBase
+  if dridriTeamMoveToTarget (.95 * [ detection-range ] of mem5) []
 end
 
 to goRedRocketLauncher
   if mem0 = 0 [ dridriTeamSoldierGoToMeetPoint ]
   if mem0 = 1 [ dridriTeamSoldierWaitForAttack ]
-  if mem0 = 2 [ dridriSoldierAttack ]
+  if mem0 = 2
+  [
+    if [energy] of mem5 < 0
+    [
+      ifelse mem5 = mem1
+      [ set mem5 mem2 ]
+      [ set mem5 mem1 ]
+    ]
+    dridriSoldierAttack
+  ]
+  if mem0 = 3 [ dridriTeamSoldierReturnBase ]
 end
 
 to dridriTeamHarvesterSearchFood
@@ -190,8 +217,6 @@ to dridriTeamHarvesterFeedBase
   ; et l'on repart à la recherche de nourriture
   if distance targetBase <= 2
   [
-    set givenThisTick givenThisTick + carrying-food?
-    set howManyGive howManyGive + 1
     give-food targetBase carrying-food?
    ;Repare à la recherche de nourriture 
     set mem0 0
@@ -357,11 +382,11 @@ to initRedRocketLauncher
   let xCorMeetPoint mean [xcor] of my-bases - 10
   let yCorMeetPoint mean [ycor] of my-bases
   
-  set mem3 patch xCorMeetPoint yCorMeetPoint
+  set mem5 patch xCorMeetPoint yCorMeetPoint
   
-  set heading towards mem3
+  set heading towards mem5
   
-  ask mem3
+  ask mem5
   [ set pcolor green ]
 end
 

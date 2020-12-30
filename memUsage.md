@@ -5,16 +5,13 @@
 * mem11 : énegie pour savoir de combien elle a changée tous les <un nombre> ticks
 # Déplaçable
 ## Harvester
-* mem5 : le patch vers lequel se déplacer
+* mem5 : destination
 ## Rocket Launcher
 * mem0 : mode de fonctionnement
 * mem[1-2] : coordonnées des bases énemies
-* mem3 : coordonnées d'un point de rassemblement
-* mem4 : la base qui est ciblée
-* mem5 : le patch vers lequel se déplacer
+* mem5 : destination
 ## Explorer
 * mem0 : mode de fonctionnement
 * mem1 : base énemie repérée
-* mem2 : base allié vers laquelle aller
 * mem3 : nombre de bases à laquelle l'information courrante a été donné
-* mem5 : le patch vers lequel se déplacer
+* mem5 : destination
