@@ -234,28 +234,23 @@ to goRedHarvester
   if mem0 = 1 [ dridriTeamHarvesterFeedBase ]
 end
 
+;;;;;;;;;;;;;;;;;;
+;; --- BASE --- ;;
+;;;;;;;;;;;;;;;;;;
+
 to dridriTeamBaseRequests [ n b ]
   if b = Harvesters [ set mem0 max (list 0 (mem0 + n)) ]
-  if b = RocketLaunchers [ set mem1 max (list 0 (mem1 + n)) ]
-  if b = Explorers [ set mem2 max (list 0 (mem2 + n)) ]
+  if b = Explorers [ set mem1 max (list 0 (mem1 + n)) ]
+  if b = RocketLaunchers [ set mem2 max (list 0 (mem2 + n)) ]
 end
-
-to dridriTeamBaseRequestHarvesters [ n ] dridriTeamBaseRequests n Harvesters end
 
 ;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
 to dridriTeamBaseConditionalyRequestHarvester
   let harvesterThreshold 2
   let harvesterNumber count perceive-specific-robots color Harvesters
   ifelse harvesterNumber < harvesterThreshold
-  [ dridriTeamBaseRequestHarvesters 1 ]
-  [
-    if mem0 > 0
-    [ dridriTeamBaseRequestHarvesters -1 ]
-  ]
-end
-
-to dridriTeamBaseRequestSoldiers [ n ]
-  dridriTeamBaseRequests n RocketLaunchers
+  [ dridriTeamBaseRequests 1 Harvesters ] 
+  [ dridriTeamBaseRequests -1 Harvesters ]
 end
 
 to-report dridriTeamComputeFactor [ de ]
@@ -268,27 +263,28 @@ end
 
 ;Si on a perdu de l'énergie  alors on enlèvera des soldats de la file d'attente
 to dridriTeamBaseConditionalyRequestSoldier
-  if ticks mod 400 = 0
+  if mem10 != 0
   [
-    let dEnergy energy - mem11;mem11 = la variation d'énergie
-    ;let f 0.60 * dridriTeamComputeFactor dEnergy
-    let newSoldierAmount 0.60 * dEnergy / dridriTeamGetBreedCost RocketLaunchers
-    
-    ;if mem9 = 1
-    ;[ type self type "dE=" type dEnergy type "   f=" type f type "   s=" type newSoldierAmount type "\n" ]
-    
-    let soldierAmountToRequest floor newSoldierAmount
-    
-    if soldierAmountToRequest != 0
-    [ dridriTeamBaseRequestSoldiers soldierAmountToRequest ]
-    set mem11 energy;
-  ]
+    if length mem10 = 2
+    [
+      let dEnergy energy - mem11;mem11 = la variation d'énergie
+                                ;let f 0.60 * dridriTeamComputeFactor dEnergy
+      let newSoldierAmount 0.60 * dEnergy / dridriTeamGetBreedCost RocketLaunchers
+      
+      ;if mem9 = 1
+      ;[ type self type "dE=" type dEnergy type "   f=" type f type "   s=" type newSoldierAmount type "\n" ]
+      
+      let soldierAmountToRequest floor newSoldierAmount
+      
+      if soldierAmountToRequest != 0
+      [ dridriTeamBaseRequests soldierAmountToRequest RocketLaunchers ]
+      set mem11 energy;
+  ]]
 end
 
-to dridriTeamBaseRequestExplorers [ n ] dridriTeamBaseRequests n Explorers end
 to dridriTeamBaseConditionalyRequestExplorer
   if ((mem10 = 0) or (length mem10 != 2)) and (ticks mod 400 = 0)
-  [ dridriTeamBaseRequestExplorers 1 ]
+  [ dridriTeamBaseRequests 1 Explorers ]
 end
 
 to dridriTeamBaseConditionalyRequestBots
@@ -297,34 +293,30 @@ to dridriTeamBaseConditionalyRequestBots
   dridriTeamBaseConditionalyRequestExplorer
 end
 
-to dridriTeamBaseCreateHarvester
-  if mem0 > 0
+to dridriTeamBaseCreate [ b ]
+  if (b = Harvesters) and (mem0 > 0)
   [
     new-Harvester self
-    set mem0 mem0 - 1
+    set mem0 (mem0 - 1)
   ]
-end
 
-to dridriTeamBaseCreateSoldier
-  if mem1 > 0
-  [
-    new-RocketLauncher self
-    set mem1 mem1 - 1
-  ]
-end
-
-to dridriTeamBaseCreateExplorer
-  if mem2 > 0
+  if (b = Explorers) and (mem1 > 0)
   [
     new-Explorer self
-    set mem2 mem2 - 1
+    set mem1 (mem1 - 1)
+  ]
+  
+  if (b = RocketLaunchers) and (mem2 > 0)
+  [
+    new-RocketLauncher self
+    set mem2 (mem2 - 1)
   ]
 end
 
 to dridriTeamBaseCreateBots
-  if create-ok? [ dridriTeamBaseCreateHarvester ]
-  if create-ok? [ dridriTeamBaseCreateSoldier ]
-  ;if create-ok? [ dridriTeamBaseCreateExplorer ]
+  if create-ok? [ dridriTeamBaseCreate Harvesters ]
+  if create-ok? [ dridriTeamBaseCreate Explorers ]
+  if create-ok? [ dridriTeamBaseCreate RocketLaunchers ]
 end
 
 to dridriTeamBaseLaunchFAF
@@ -385,9 +377,6 @@ to initRedRocketLauncher
   set mem5 patch xCorMeetPoint yCorMeetPoint
   
   set heading towards mem5
-  
-  ask mem5
-  [ set pcolor green ]
 end
 
 ;; procedure pour initialiser les rocket-launchers rouges
@@ -397,6 +386,5 @@ end
 
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
-  dridriTeamBaseRequestHarvesters 5
-  set mem10 (list (base 4) (base 6))
+  dridriTeamBaseRequests 15 Harvesters
 end

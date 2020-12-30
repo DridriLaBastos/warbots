@@ -1239,7 +1239,7 @@ T
 T
 OBSERVER
 NIL
-G
+NIL
 NIL
 NIL
 1
@@ -1434,6 +1434,23 @@ false
 PENS
 "default" 1.0 0 -2674135 true "" "plot sum [energy] of Bases with [ color = red ]"
 "pen-1" 1.0 0 -13840069 true "" "plot sum [energy] of Bases with [ color = green ]"
+
+BUTTON
+39
+56
+102
+89
+SGO
+go
+NIL
+1
+T
+OBSERVER
+NIL
+G
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## DE QUOI S'AGIT-IL?
