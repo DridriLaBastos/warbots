@@ -239,9 +239,23 @@ end
 ;;;;;;;;;;;;;;;;;;
 
 to dridriTeamBaseRequests [ n b ]
+  type self type " " type n type " " print b
+  print (list mem0 mem1 mem2)
+  ifelse b = Harvesters
+  [ set mem0 max (list 0 (mem0 + n)) ]
+  [
+    ifelse b = Explorers
+    [ set mem1 max (list 0 (mem1 + n)) ]
+    [
+      ifelse b = RocketLaunchers
+      [ set mem2 max (list 0 (mem2 + n)) ]
+      [ print "ERROR !!!" ]
+    ]
+  ]
   if b = Harvesters [ set mem0 max (list 0 (mem0 + n)) ]
   if b = Explorers [ set mem1 max (list 0 (mem1 + n)) ]
   if b = RocketLaunchers [ set mem2 max (list 0 (mem2 + n)) ]
+  print (list mem0 mem1 mem2)
 end
 
 ;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
