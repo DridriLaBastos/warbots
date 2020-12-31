@@ -1,6 +1,7 @@
 # Base
 * mem[0-2] : file d'attente de création des robots (0: harvester,  1: explorer,  2: soldier)
 * mem[3-4] : file d'attente de création des missiles
+* mem9 : quantité d'énergie disponible pour créer des soldats
 * mem10 : coordonnées des bases ennemie
 * mem11 : énegie pour savoir de combien elle a changée tous les <un nombre> ticks
 # Déplaçable

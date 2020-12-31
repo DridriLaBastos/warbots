@@ -155,6 +155,10 @@ to goRedRocketLauncher
   if mem0 = 3 [ dridriTeamSoldierReturnBase ]
 end
 
+;;;;;;;;;;;;;;;;;;;;;;;
+;; --- HARVESTER --- ;;
+;;;;;;;;;;;;;;;;;;;;;;;
+
 to dridriTeamHarvesterSearchFood
   let f min-one-of perceive-food [ distance myself ]
 
@@ -238,6 +242,11 @@ end
 ;; --- BASE --- ;;
 ;;;;;;;;;;;;;;;;;;
 
+to dridriTeamBaseUpdateAvailableEnergy
+  let dEnergy energy - mem11
+  set mem9 max (list 0 (mem9 + 0.80 * dEnergy))
+end
+
 to dridriTeamBaseRequests [ n b ]
   type self type " " type n type " " print b
   print (list mem0 mem1 mem2)
@@ -247,14 +256,14 @@ to dridriTeamBaseRequests [ n b ]
     ifelse b = Explorers
     [ set mem1 max (list 0 (mem1 + n)) ]
     [
-      ifelse b = RocketLaunchers
+      if b = RocketLaunchers
       [ set mem2 max (list 0 (mem2 + n)) ]
-      [ print "ERROR !!!" ]
     ]
   ]
-  if b = Harvesters [ set mem0 max (list 0 (mem0 + n)) ]
-  if b = Explorers [ set mem1 max (list 0 (mem1 + n)) ]
-  if b = RocketLaunchers [ set mem2 max (list 0 (mem2 + n)) ]
+  ;C'est quand même étrange que cette vession avec les if à la ligne ne fonctionne pas
+  ;if b = Harvesters [ set mem0 max (list 0 (mem0 + n)) ]
+  ;if b = Explorers [ set mem1 max (list 0 (mem1 + n)) ]
+  ;if b = RocketLaunchers [ set mem2 max (list 0 (mem2 + n)) ]
   print (list mem0 mem1 mem2)
 end
 
@@ -264,36 +273,27 @@ to dridriTeamBaseConditionalyRequestHarvester
   let harvesterNumber count perceive-specific-robots color Harvesters
   ifelse harvesterNumber < harvesterThreshold
   [ dridriTeamBaseRequests 1 Harvesters ] 
-  [ dridriTeamBaseRequests -1 Harvesters ]
+  [ if mem0 > 0 [ dridriTeamBaseRequests -1 Harvesters ]]
 end
 
 to-report dridriTeamComputeFactor [ de ]
   report atan1 de / 3
 end
-;La quantité de soldat a créer dépend de l'énergie que la base à reçu sur 100 ticks.
-;L'idée est d'utiliser une fraction de l'énergie reçu pour créer des soldats.
-;Au fur et à mesure que le temps avance, une fraction du plus en plus importante de l'énergie reçue sera utilisé car de plus en plus d'énergie est créée.
-;Au max 60% de l'énergie gagnée sur 100 ticks sera utilisée pour créer de nouveaux soldats. Ceci afin de pouvoir toujours avoir une quantité d'énergie qui augmente.
-
 ;Si on a perdu de l'énergie  alors on enlèvera des soldats de la file d'attente
 to dridriTeamBaseConditionalyRequestSoldier
   if mem10 != 0
   [
-    if length mem10 = 2
+    if (length mem10 = 2)
     [
-      let dEnergy energy - mem11;mem11 = la variation d'énergie
-                                ;let f 0.60 * dridriTeamComputeFactor dEnergy
-      let newSoldierAmount 0.60 * dEnergy / dridriTeamGetBreedCost RocketLaunchers
+      let soldierQuantity mem9 / dridriTeamGetBreedCost RocketLaunchers
+      let newSoldierAmount floor soldierQuantity
       
-      ;if mem9 = 1
-      ;[ type self type "dE=" type dEnergy type "   f=" type f type "   s=" type newSoldierAmount type "\n" ]
-      
-      let soldierAmountToRequest floor newSoldierAmount
-      
-      if soldierAmountToRequest != 0
-      [ dridriTeamBaseRequests soldierAmountToRequest RocketLaunchers ]
-      set mem11 energy;
-  ]]
+      if newSoldierAmount > 0
+      [
+        dridriTeamBaseRequests newSoldierAmount RocketLaunchers
+        set mem9 (mem9 - newSoldierAmount * dridriTeamGetBreedCost RocketLaunchers)
+      ]
+  ] ]
 end
 
 to dridriTeamBaseConditionalyRequestExplorer
@@ -367,10 +367,12 @@ to dridriTeamBaseLaunchFAF
 end
 
 to goRedBase
+  dridriTeamBaseUpdateAvailableEnergy
   dridriTeamBaseConditionalyRequestBots
   dridriTeamBaseCreateBots
 
   dridriTeamBaseLaunchFAF
+  set mem11 energy
 end
 
 ;; procedure pour initialiser les explorers rouges
@@ -400,5 +402,6 @@ end
 
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
+  set mem11 energy
   dridriTeamBaseRequests 15 Harvesters
 end

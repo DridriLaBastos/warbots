@@ -1307,7 +1307,7 @@ CHOOSER
 display?
 display?
 "none" "energy" "missiles" "carrying-food?" "carried-walls-nrj" "mem0" "mem1" "mem2" "mem3" "mem4" "mem5"
-0
+6
 
 MONITOR
 30
@@ -1451,6 +1451,24 @@ G
 NIL
 NIL
 1
+
+PLOT
+1052
+207
+1252
+357
+plot 3
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -1184463 true "" "plot sum [mem9] of Bases with [ color = red ]"
 
 @#$#@#$#@
 ## DE QUOI S'AGIT-IL?
