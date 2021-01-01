@@ -29,7 +29,10 @@ to-report dridriTeamMoveToTarget [ d ]
     dridriTeamForwardMove
     report false
   ]
-  [ report true ]
+  [
+    report true
+    set mem5 0
+  ]
 end
 
 to-report dridriTeamGetBreedCost [ b ]
@@ -121,7 +124,7 @@ end
 
 to dridriSoldierAttack
   if dridriTeamMoveToTarget missile-range
-  [
+  [    
     ifelse nb-missiles > 0
     [ launch-rocket towardsxy [xcor] of mem5 [ycor] of mem5 ]
     [
@@ -135,24 +138,33 @@ to dridriSoldierAttack
   ]
 end
 
+to dridriTeamSoldierAttack
+  if dridriTeamMoveToTarget missile-range
+  [
+    ifelse nb-missiles > 0
+    [ launch-rocket towardsxy [xcor] of mem5 [ycor] of mem5 ]
+    [
+      ifelse nb-fafs > 0
+      [
+        let fafTarget one-of perceive-specific-robots ennemy Harvesters
+        launch-faf fafTarget
+      ]
+      [ set mem0 1 ]
+    ]
+  ]
+end
+
 to dridriTeamSoldierReturnBase
   if dridriTeamMoveToTarget (.95 * [ detection-range ] of mem5) []
 end
 
 to goRedRocketLauncher
-  if mem0 = 0 [ dridriTeamSoldierGoToMeetPoint ]
-  if mem0 = 1 [ dridriTeamSoldierWaitForAttack ]
-  if mem0 = 2
+  if mem0 = 0
   [
-    if [energy] of mem5 < 0
-    [
-      ifelse mem5 = mem1
-      [ set mem5 mem2 ]
-      [ set mem5 mem1 ]
-    ]
-    dridriSoldierAttack
+    if dridriTeamMoveToTarget 0.5 []
+    dridriTeamSoldierAttack
   ]
-  if mem0 = 3 [ dridriTeamSoldierReturnBase ]
+  if mem0 = 1 [ dridriTeamSoldierReturnBase ]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -248,8 +260,8 @@ to dridriTeamBaseUpdateAvailableEnergy
 end
 
 to dridriTeamBaseRequests [ n b ]
-  type self type " " type n type " " print b
-  print (list mem0 mem1 mem2)
+  ;type self type " " type n type " " print b
+  ;print (list mem0 mem1 mem2)
   ifelse b = Harvesters
   [ set mem0 max (list 0 (mem0 + n)) ]
   [
@@ -264,12 +276,12 @@ to dridriTeamBaseRequests [ n b ]
   ;if b = Harvesters [ set mem0 max (list 0 (mem0 + n)) ]
   ;if b = Explorers [ set mem1 max (list 0 (mem1 + n)) ]
   ;if b = RocketLaunchers [ set mem2 max (list 0 (mem2 + n)) ]
-  print (list mem0 mem1 mem2)
+  ;print (list mem0 mem1 mem2)
 end
 
 ;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
 to dridriTeamBaseConditionalyRequestHarvester
-  let harvesterThreshold 2
+  let harvesterThreshold 5
   let harvesterNumber count perceive-specific-robots color Harvesters
   ifelse harvesterNumber < harvesterThreshold
   [ dridriTeamBaseRequests 1 Harvesters ] 
@@ -283,8 +295,6 @@ end
 to dridriTeamBaseConditionalyRequestSoldier
   if mem10 != 0
   [
-    if (length mem10 = 2)
-    [
       let soldierQuantity mem9 / dridriTeamGetBreedCost RocketLaunchers
       let newSoldierAmount floor soldierQuantity
       
@@ -293,7 +303,7 @@ to dridriTeamBaseConditionalyRequestSoldier
         dridriTeamBaseRequests newSoldierAmount RocketLaunchers
         set mem9 (mem9 - newSoldierAmount * dridriTeamGetBreedCost RocketLaunchers)
       ]
-  ] ]
+  ]
 end
 
 to dridriTeamBaseConditionalyRequestExplorer
@@ -381,18 +391,9 @@ end
 
 ;; procedure pour initialiser les rocket-launchers rouges
 to initRedRocketLauncher
-  let aBase one-of my-bases
-  
-  set mem1 [ item 0 mem10 ] of aBase
-  set mem2 [ item 1 mem10 ] of aBase
-  
-  let meetPoint (list 0 0)
-  let xCorMeetPoint mean [xcor] of my-bases - 10
-  let yCorMeetPoint mean [ycor] of my-bases
-  
-  set mem5 patch xCorMeetPoint yCorMeetPoint
-  
-  set heading towards mem5
+  let creator my-bases with-min [ distance myself ]
+  let ennemyBases [mem10] of creator
+  set mem5 one-of item (random length ennemyBases ) ennemyBases
 end
 
 ;; procedure pour initialiser les rocket-launchers rouges
