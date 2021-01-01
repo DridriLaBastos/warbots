@@ -1273,7 +1273,7 @@ SWITCH
 132
 display-range?
 display-range?
-1
+0
 1
 -1000
 
