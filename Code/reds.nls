@@ -45,8 +45,7 @@ to-report dridriTeamGetBreedCost [ b ]
 end
 
 to dridriTeamRandomMove
-  let patchDir min-one-of neighbors in-cone 5 135 [ count Seeds-here ]
-  set heading towards patchDir
+  set heading heading - 20 + random 40
   dridriTeamForwardMove
 end
 
@@ -204,7 +203,7 @@ to dridriTeamHarvesterSearchFood
   [
     ifelse mem1 = nobody
     [ dridriTeamRandomMove ]
-    [ set mem5 mem1 if dridriTeamMoveToTarget (detection-range * .95) [] ]
+    [ set mem5 mem1 if dridriTeamMoveToTarget (detection-range * .95) [ set mem1 nobody ] ]
   ]
   
   ;Quand on atteind le seuil, on rentre à la base
@@ -269,6 +268,7 @@ to dridriTeamHarvesterFeedBase
     ;print carrying-food?
     set mem0 0
     set mem4 (list 2000 item 0 mem4)
+    if (item 0 mem4) != (item 1 mem4) [ set mem1 nobody ]
   ]
 end
 
@@ -279,7 +279,6 @@ to goRedHarvester
   if mem0 = 1 [ dridriTeamHarvesterComeToBase ]
   if mem0 = 2 [ dridriTeamHarvesterPlantSeeds ]
   if mem0 = 3 [ dridriTeamHarvesterFeedBase ]
-  if (item 0 mem4) != (item 1 mem4) [ set mem1 nobody ]
 end
 
 ;;;;;;;;;;;;;;;;;;
@@ -342,8 +341,8 @@ end
 
 to dridriTeamBaseConditionalyRequestBots
   ;dridriTeamBaseConditionalyRequestHarvester
-  dridriTeamBaseConditionalyRequestSoldier
-  dridriTeamBaseConditionalyRequestExplorer
+  ;dridriTeamBaseConditionalyRequestSoldier
+  ;dridriTeamBaseConditionalyRequestExplorer
 end
 
 to dridriTeamBaseCreate [ b ]
