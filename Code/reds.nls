@@ -168,16 +168,12 @@ to dridriTeamHarvesterRevealFoodPosition
   ;On dit aux autre harvesters qui cherchent de la nourriture où se trouve la source que l'on a trouvée
   if mem1 != nobody
   [
+    let callerMem4 mem4
+    let callerMem1 mem1
     ask perceive-specific-robots color Harvesters
     [
-      ;Si la nouriture est dans le rayon de recherche : un harvester qui a trouvé de la nourriture plus loin que le rayon de la base ne donne
-      ;pas la position de la nourriture à un harvester qui ne cherche qu'autour de la base
-      if not(([mem4] of myself = 500) and (mem4 = 2000))
-      [
-        ;Si le harvester cherche de la nourriture
-        if mem0 = 0
-        [  set mem1 [mem1] of myself ]
-      ]
+      if item 0 callerMem4 mem4
+      [ if mem1 = nobody [ set mem1 callerMem1 ] ]
     ]
   ]
 end
