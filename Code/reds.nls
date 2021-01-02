@@ -156,28 +156,16 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; --- HARVESTER --- ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
-
-to dridriTeamHarvesterSetMem1 [ v ]
-  let harvesterAround (perceive-specific-robots color Harvesters) with [ mem1 != nobody ]
-  set mem1 ifelse-value count harvesterAround <= 2 [ v ] [ nobody ]
-end
-
 to dridriTeamHarvesterRevealFoodPosition
   ;On dit aux autre harvesters qui cherchent de la nourriture où se trouve la source que l'on a trouvée
   if mem1 != nobody
   [
-    let callerMem4 mem4
     let callerMem1 mem1
-    ask perceive-specific-robots color Harvesters
+    ask (perceive-specific-robots color Harvesters) with [ item 0 mem4 = 500 ]
     [
-      if item 0 callerMem4 = item 0 mem4
-      [
         if distance callerMem1 > 2
-        [
-          if mem1 = nobody [ dridriTeamHarvesterSetMem1 callerMem1 ]
-        ]
+        [ if mem1 = nobody [ set mem1 callerMem1 ] ]
       ]
-    ]
   ]
 end
 
@@ -208,7 +196,7 @@ to dridriTeamHarvesterSearchFood
   [
     ;On sauvegarde où on a trouvé de la nourriture pour pouvoir continuer à donner cette information à d'autre harvester dans le chemin vers la base
     set mem0 (mem0 + 1)
-    dridriTeamHarvesterSetMem1 patch-here
+    set mem1 patch-here
     set mem5 mem3
   ]
   
