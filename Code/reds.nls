@@ -4,18 +4,11 @@
 ;; préfixe : red-team
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-globals [ count_ ]
-
-;fonction atan(x), netlogo ne fournit que atan(x,y)
-to-report atan1 [ x ]
-  report 1 - atan 1 x * 2 / 180
-end
-
 to dridriTeamForwardMove
   let i 0
-  while [ free-ahead? speed != nobody and i < 3]
+  while [ free-ahead? speed != nobody and i < 6]
   [
-    rt 120
+    rt 60
     set i i + 1
   ]
   
@@ -238,17 +231,18 @@ to dridriTeamHarvesterPlantSeeds
   [ 
     ifelse mem5 = 0
     [
-      ;On choisit un endroit où planter des graines qui n'a été choisit par aucun autre harvester
-      let b mem3
-      let possiblePatches neighbors with [ (distance b < missile-range) and (count Bases-here = 0) and (count Walls-here = 0) ]
-      let choosen min-one-of possiblePatches [ count Seeds-here ]
+      ;On demande à la base un endroit où planter les graines
+      let choosen 0
+      ask mem3 [ set choosen dridriTeamBaseGetPatchToSeed ]
       set mem5 choosen
+      
+      ;Tant que la base nous donne un patch qui à déjà été attribué, on en redemande un autre
       while [ count perceive-specific-robots color Harvesters with [ mem5 = choosen ] > 0]
       [ 
-        set choosen min-one-of possiblePatches [ count Seeds-here ]
+        ask mem3 [ set choosen dridriTeamBaseGetPatchToSeed ]
         set mem5 choosen
-      ;ask mem5 [ set pcolor green ]
       ]
+      ask mem5 [ set pcolor green ]
     ]
     [
       if dridriTeamMoveToTarget 0 []
@@ -256,7 +250,7 @@ to dridriTeamHarvesterPlantSeeds
       if patch-here = mem5
       [
         plant-seeds color max-seeds
-        ;ask mem5 [ set pcolor black ]
+        ask mem5 [ set pcolor black ]
         set mem5 0
         set mem2 mem2 + 1
       ]
@@ -300,6 +294,11 @@ end
 ;;;;;;;;;;;;;;;;;;
 ;; --- BASE --- ;;
 ;;;;;;;;;;;;;;;;;;
+
+to-report dridriTeamBaseGetPatchToSeed
+  let possiblePatches (patches in-radius detection-range with [ (count Bases-here = 0) and (count Walls-here = 0)]) with-min [ count Seeds-here ]
+  report min-one-of (possiblePatches with-min [ distance self ]) [ distance myself ]
+end
 
 to dridriTeamBaseUpdateAvailableEnergy
   let dEnergy energy - mem11
