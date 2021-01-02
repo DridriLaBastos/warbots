@@ -30,10 +30,10 @@ to-report dridriTeamMoveToTarget [ d ]
     report false
   ]
   [
-    print self
-    type "   " type mem5 type " --> "
+    ;print self
+    ;type "   " type mem5 type " --> "
     set mem5 0
-    print mem5
+    ;print mem5
     report true
   ]
 end
@@ -115,7 +115,7 @@ to dridriTeamSoldierWaitForAttack
   set heading towards headingPatch
   dridriteamForwardMove
   
-  if count soldierAround >= 10
+  if count soldierAround >= 4
   [
     let baseTarget one-of (list mem1 mem2)
     
@@ -126,8 +126,8 @@ to dridriTeamSoldierWaitForAttack
 end
 
 to dridriSoldierAttack
-  if dridriTeamMoveToTarget missile-range
-  [    
+  if dridriTeamMoveToTarget 1
+  [
     ifelse nb-missiles > 0
     [ launch-rocket towardsxy [xcor] of mem5 [ycor] of mem5 ]
     [
@@ -141,77 +141,45 @@ to dridriSoldierAttack
   ]
 end
 
-to dridriTeamSoldierAttack
-  if dridriTeamMoveToTarget missile-range
-  [
-    ifelse nb-missiles > 0
-    [ launch-rocket towardsxy [xcor] of mem5 [ycor] of mem5 ]
-    [
-      ifelse nb-fafs > 0
-      [
-        let fafTarget one-of perceive-specific-robots ennemy Harvesters
-        launch-faf fafTarget
-      ]
-      [ set mem0 1 ]
-    ]
-  ]
-end
-
 to dridriTeamSoldierReturnBase
   if dridriTeamMoveToTarget (.95 * [ detection-range ] of mem5) []
 end
 
 to goRedRocketLauncher
-  if mem0 = 0
+  if mem0 = 0 [ dridriTeamSoldierGoToMeetPoint ]
+  if mem0 = 1 [ dridriTeamSoldierWaitForAttack ]
+  if mem0 = 2
   [
-    if dridriTeamMoveToTarget 0.5 []
-    dridriTeamSoldierAttack
+    if [energy] of mem5 < 0
+    [
+      ifelse mem5 = mem1
+      [ set mem5 mem2 ]
+      [ set mem5 mem1 ]
+    ]
+    dridriSoldierAttack
   ]
-  if mem0 = 1 [ dridriTeamSoldierReturnBase ]
+  if mem0 = 3 [ dridriTeamSoldierReturnBase ]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; --- HARVESTER --- ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-;to dridriTeamHarvesterSearchFood
-;  let f min-one-of perceive-food [ distance myself ]
-;
-;  while [(f != nobody) and (distance f <= 2)] [
-;    take-food f
-;    set f min-one-of perceive-food [ distance myself ]
-;  ]
-;  
-;  ;Retourner à la base pour une certaine quantité de nourriture transportée
-;  if carrying-food? >= mem4
-;  [
-;    set mem0 1
-;    set mem4 2000
-;  ]
-;  
-;  ifelse f != nobody
-;  [
-;    set heading towards f
-;    dridriTeamForwardMove
-;  ]
-;  [ dridriTeamRandomMove ]
-;  
-;  if mem1 = 1
-;  [
-;    let b min-one-of my-bases [ distance myself ]
-;    
-;    if distance b >= missile-range
-;    [ set heading towards b ]
-;  ]
-;end
-
-to dridriTeamHarvesterRevealFoodPosition [ p ]
+to dridriTeamHarvesterRevealFoodPosition
   ;On dit aux autre harvesters qui cherchent de la nourriture où se trouve la source que l'on a trouvée
-  ask perceive-specific-robots color Harvesters
+  if mem1 != 0
   [
-    ;Si le harvester cherche de la nourriture
-    if mem0 = 0
-    [ if mem5 = 0 [ set mem5 p ] ]
+    ask perceive-specific-robots color Harvesters
+    [
+      ;Si le harvester cherche de la nourriture
+      if mem0 = 0
+      [
+        ;Si la nouriture est dans le rayon de recherche : un harvester qui a trouvé de la nourriture plus loin que le rayon de la base ne donne
+        ;pas la position de la nourriture à un harvester qui ne cherche qu'autour de la base
+        if not(([mem4] of myself = 500) and (mem4 = 2000))
+        [  set mem1 [mem1] of myself ]
+      ]
+    ]
   ]
 end
 
@@ -224,49 +192,42 @@ to dridriTeamHarvesterSearchFood
     set p [patch-here] of f
     take-food f
     set f min-one-of perceive-food [ distance myself ]
-    set mem5 0; Si on trouve de la nourriture ce n'est pas la peine de se rappeler où il y en avait
+    set mem1 0; Si on trouve de la nourriture ce n'est pas la peine de se rappeler où il y en avait
   ]
   
   ;Avancer vers le reste de la nouriture, vers un spot de nouriture, ou au hasard
   ifelse f != nobody
   [
-    dridriTeamHarvesterRevealFoodPosition p
+    dridriTeamHarvesterRevealFoodPosition
     set heading towards f
     dridriTeamForwardMove
   ]
   [
-    ifelse mem5 = 0
+    ifelse mem1 = 0
     [ dridriTeamRandomMove ]
-    [ if dridriTeamMoveToTarget (detection-range * .95) [] ]
+    [ set mem5 mem1 if dridriTeamMoveToTarget (detection-range * .95) [] ]
   ]
   
   ;Quand on atteind le seuil, on rentre à la base
-  if carrying-food? >= mem4
+  if carrying-food? >= item 0 mem4
   [
     ;On sauvegarde où on a trouvé de la nourriture pour pouvoir continuer à donner cette information à d'autre harvester dans le chemin vers la base
-    set mem5 p
-    set mem4 2000;Après le premier apport de nourriture, on ne reste qu'aux alentours de la base
     set mem0 (mem0 + 1)
+    set mem1 ifelse-value p = nobody [0] [p]
+    set mem5 mem3
   ]
   
   ;Si on cherche de la nourriture autour de la base, on ne dépasse pas son rayon
-  if mem4 = 2000
+  if item 0 mem4 = 2000
   [
-    let b min-one-of my-bases [ distance myself ]
-    
-    if distance b >= missile-range
-    [ set heading towards b ]
+    if distance mem3 >= missile-range
+    [ set heading towards mem3 ]
   ]
 end
 
 to dridriTeamHarvesterComeToBase
-  dridriTeamHarvesterRevealFoodPosition mem5
-  
-  let saveMem5 mem5
-  set mem5 mem3
-  ifelse dridriTeamMoveToTarget missile-range
+  if dridriTeamMoveToTarget missile-range
   [ set mem0 (mem0 + 1) ]
-  [ set mem5 saveMem5 ]
 end
 
 to dridriTeamHarvesterPlantSeeds
@@ -276,7 +237,7 @@ to dridriTeamHarvesterPlantSeeds
     ifelse mem5 = 0
     [
       set mem5 min-one-of neighbors with [ distance [mem3] of myself < missile-range ] [ count Seeds-here ]
-      ask mem5 [ set pcolor green ]
+      ;ask mem5 [ set pcolor green ]
     ]
     [
       if dridriTeamMoveToTarget 0 []
@@ -284,7 +245,7 @@ to dridriTeamHarvesterPlantSeeds
       if patch-here = mem5
       [
         plant-seeds color max-seeds
-        ask mem5 [ set pcolor black ]
+        ;ask mem5 [ set pcolor black ]
         set mem5 0
         set mem2 mem2 + 1
       ]
@@ -303,21 +264,23 @@ end
 to dridriTeamHarvesterFeedBase
   if dridriTeamMoveToTarget 2
   [
-    print self
-    type "   " type carrying-food? type " --> "
+    ;print self
+    ;type "   " type carrying-food? type " --> "
     give-food mem3 carrying-food?
-    print carrying-food?
+    ;print carrying-food?
     set mem0 0
-    set mem4 2000
+    set mem4 (list 2000 item 0 mem4)
   ]
 end
 
 ;Se déplace aléatoirement. Quand ils trouvent de la nourriture en donne 80% à la base et plante ce qui reste
 to goRedHarvester
+  dridriTeamHarvesterRevealFoodPosition
   if mem0 = 0 [ dridriTeamHarvesterSearchFood ]
   if mem0 = 1 [ dridriTeamHarvesterComeToBase ]
   if mem0 = 2 [ dridriTeamHarvesterPlantSeeds ]
   if mem0 = 3 [ dridriTeamHarvesterFeedBase ]
+  if (item 0 mem4) != (item 1 mem4) [ set mem1 0 ]
 end
 
 ;;;;;;;;;;;;;;;;;;
@@ -465,12 +428,12 @@ end
 
 ;; procedure pour initialiser les rocket-launchers rouges
 to initRedHarvester
-  set mem4 500
+  set mem4 (list 500 500)
   set mem3 min-one-of my-bases [ distance myself ]
 end
 
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
   set mem11 energy
-  dridriTeamBaseRequests 2 Harvesters
+  dridriTeamBaseRequests 1 Harvesters
 end
