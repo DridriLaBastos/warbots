@@ -164,6 +164,11 @@ end
 ;; --- HARVESTER --- ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
+to dridriTeamHarvesterSetMem1 [ v ]
+  let harvesterAround (perceive-specific-robots color Harvesters) with [ mem1 != nobody ]
+  set mem1 ifelse-value count harvesterAround <= 2 [ v ] [ nobody ]
+end
+
 to dridriTeamHarvesterRevealFoodPosition
   ;On dit aux autre harvesters qui cherchent de la nourriture où se trouve la source que l'on a trouvée
   if mem1 != nobody
@@ -173,14 +178,14 @@ to dridriTeamHarvesterRevealFoodPosition
     ask perceive-specific-robots color Harvesters
     [
       if item 0 callerMem4 = item 0 mem4
-      [ if mem1 = nobody [ set mem1 callerMem1 ] ]
+      [
+        if distance callerMem1 > 2
+        [
+          if mem1 = nobody [ dridriTeamHarvesterSetMem1 callerMem1 ]
+        ]
+      ]
     ]
   ]
-end
-
-to dridriTeamHarvesterSetMem1 [ v ]
-  let harvesterAround (perceive-specific-robots color Harvesters) with [ mem1 != nobody ]
-  set mem1 ifelse-value count harvesterAround > 3 [ nobody ] [ v ]
 end
 
 to dridriTeamHarvesterSearchFood
@@ -190,6 +195,7 @@ to dridriTeamHarvesterSearchFood
   while [(f != nobody) and (distance f <= 2)] [
     take-food f
     set f min-one-of perceive-food [ distance myself ]
+    set mem1 nobody
   ]
   
   ;Avancer vers le reste de la nouriture, vers un spot de nouriture, ou au hasard
@@ -201,7 +207,7 @@ to dridriTeamHarvesterSearchFood
   [
     ifelse mem1 = nobody
     [ dridriTeamRandomMove ]
-    [ set mem5 mem1 if dridriTeamMoveToTarget (detection-range * .95) [ set mem1 nobody ] ]
+    [ set mem5 mem1 if dridriTeamMoveToTarget 2 [ set mem1 nobody ] ]
   ]
   
   ;Quand on atteind le seuil, on rentre à la base
@@ -232,6 +238,7 @@ to dridriTeamHarvesterPlantSeeds
   [ 
     ifelse mem5 = 0
     [
+      ;On choisit un endroit où planter des graines qui n'a été choisit par aucun autre harvester
       let b mem3
       let possiblePatches neighbors with [ (distance b < missile-range) and (count Bases-here = 0) and (count Walls-here = 0) ]
       let choosen min-one-of possiblePatches [ count Seeds-here ]
