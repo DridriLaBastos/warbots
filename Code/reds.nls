@@ -172,7 +172,7 @@ to dridriTeamHarvesterRevealFoodPosition
     let callerMem1 mem1
     ask perceive-specific-robots color Harvesters
     [
-      if item 0 callerMem4 mem4
+      if item 0 callerMem4 = mem4
       [ if mem1 = nobody [ set mem1 callerMem1 ] ]
     ]
   ]
@@ -181,18 +181,15 @@ end
 to dridriTeamHarvesterSearchFood
   ;Ramassage de la nouriture
   let f min-one-of perceive-food [ distance myself ]
-  let p 0
 
   while [(f != nobody) and (distance f <= 2)] [
     take-food f
     set f min-one-of perceive-food [ distance myself ]
-    set p [patch-here] of f
   ]
   
   ;Avancer vers le reste de la nouriture, vers un spot de nouriture, ou au hasard
   ifelse f != nobody
   [
-    dridriTeamHarvesterRevealFoodPosition
     set heading towards f
     dridriTeamForwardMove
   ]
@@ -207,7 +204,7 @@ to dridriTeamHarvesterSearchFood
   [
     ;On sauvegarde où on a trouvé de la nourriture pour pouvoir continuer à donner cette information à d'autre harvester dans le chemin vers la base
     set mem0 (mem0 + 1)
-    set mem1 p
+    set mem1 patch-here
     set mem5 mem3
   ]
   
@@ -430,5 +427,5 @@ end
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
   set mem11 energy
-  dridriTeamBaseRequests 1 Harvesters
+  dridriTeamBaseRequests 2 Harvesters
 end
