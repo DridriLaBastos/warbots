@@ -260,7 +260,7 @@ to go
   ]
 
   ; pour toutes les bases
-  ask Bases [
+  ask Bases with [ color = red ][
     ; teste si elles sont toujours en vie
     mort
     ; decremente le delai d'attente avant de pouvoir lancer un nouveau missile
@@ -1273,7 +1273,7 @@ SWITCH
 132
 display-range?
 display-range?
-0
+1
 1
 -1000
 
@@ -1941,7 +1941,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.1.1
+NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@

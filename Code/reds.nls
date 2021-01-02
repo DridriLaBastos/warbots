@@ -172,10 +172,15 @@ to dridriTeamHarvesterRevealFoodPosition
     let callerMem1 mem1
     ask perceive-specific-robots color Harvesters
     [
-      if item 0 callerMem4 = mem4
+      if item 0 callerMem4 = item 0 mem4
       [ if mem1 = nobody [ set mem1 callerMem1 ] ]
     ]
   ]
+end
+
+to dridriTeamHarvesterSetMem1 [ v ]
+  let harvesterAround (perceive-specific-robots color Harvesters) with [ mem1 != nobody ]
+  set mem1 ifelse-value count harvesterAround > 3 [ nobody ] [ v ]
 end
 
 to dridriTeamHarvesterSearchFood
@@ -204,7 +209,7 @@ to dridriTeamHarvesterSearchFood
   [
     ;On sauvegarde où on a trouvé de la nourriture pour pouvoir continuer à donner cette information à d'autre harvester dans le chemin vers la base
     set mem0 (mem0 + 1)
-    set mem1 patch-here
+    dridriTeamHarvesterSetMem1 patch-here
     set mem5 mem3
   ]
   
@@ -227,8 +232,16 @@ to dridriTeamHarvesterPlantSeeds
   [ 
     ifelse mem5 = 0
     [
-      set mem5 min-one-of neighbors with [ distance [mem3] of myself < missile-range ] [ count Seeds-here ]
+      let b mem3
+      let possiblePatches neighbors with [ (distance b < missile-range) and (count Bases-here = 0) and (count Walls-here = 0) ]
+      let choosen min-one-of possiblePatches [ count Seeds-here ]
+      set mem5 choosen
+      while [ count perceive-specific-robots color Harvesters with [ mem5 = choosen ] > 0]
+      [ 
+        set choosen min-one-of possiblePatches [ count Seeds-here ]
+        set mem5 choosen
       ;ask mem5 [ set pcolor green ]
+      ]
     ]
     [
       if dridriTeamMoveToTarget 0 []
@@ -267,6 +280,9 @@ end
 
 ;Se déplace aléatoirement. Quand ils trouvent de la nourriture en donne 80% à la base et plante ce qui reste
 to goRedHarvester
+  let harvesterAround (perceive-specific-robots color Harvesters) with [ mem1 != nobody ] 
+  if count harvesterAround > 3
+  [ set mem1 nobody ]
   dridriTeamHarvesterRevealFoodPosition
   if mem0 = 0 [ dridriTeamHarvesterSearchFood ]
   if mem0 = 1 [ dridriTeamHarvesterComeToBase ]
@@ -427,5 +443,5 @@ end
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
   set mem11 energy
-  dridriTeamBaseRequests 2 Harvesters
+  dridriTeamBaseRequests 15 Harvesters
 end
