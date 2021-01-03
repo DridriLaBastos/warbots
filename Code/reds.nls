@@ -402,6 +402,9 @@ to dridriTeamBaseConditionnalyLaunchFAF
 end
 
 to goRedBase
+  ;On fait cette mise en mémoire ici car dans init base les murs ne sont pas encore placés et certains harvesters ne vont jamais réussir à atteindre
+  ; le patch s'il y a un mur dessus
+  if ticks = 0 [ set mem9 (patches in-radius detection-range) with [ (count Bases-here = 0) and (count Walls-here = 0)] ]
   ;Ce n'est pas la peine de lancer ce code toutes les ticks
   dridriTeamBaseAssignPatchesToHarvestingHarvesters
   dridriTeamBaseUpdateAvailableEnergy
@@ -432,7 +435,6 @@ end
 
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
-  set mem9 (patches in-radius detection-range) with [ (count Bases-here = 0) and (count Walls-here = 0)]
   set mem11 energy
   dridriTeamBaseRequests 15 Harvesters
 end
