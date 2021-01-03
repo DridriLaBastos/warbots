@@ -260,7 +260,8 @@ to go
   ]
 
   ; pour toutes les bases
-  ask Bases with [ color = red ] [
+  ;ask Bases with [ color = red ][
+  ask Bases [
     ; teste si elles sont toujours en vie
     mort
     ; decremente le delai d'attente avant de pouvoir lancer un nouveau missile
@@ -1436,9 +1437,9 @@ PENS
 "pen-1" 1.0 0 -13840069 true "" "plot sum [energy] of Bases with [ color = green ]"
 
 BUTTON
-39
+35
 56
-102
+98
 89
 SGO
 go
