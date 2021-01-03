@@ -16,7 +16,7 @@ to dridriTeamForwardMove
 end
 
 to-report dridriTeamMoveToTarget [ d ]
-  ifelse distance mem5 > d
+  ifelse (mem5 != 0) and (distance mem5 > d)
   [
     set heading towards mem5
     dridriTeamForwardMove
@@ -209,39 +209,23 @@ to dridriTeamHarvesterSearchFood
 end
 
 to dridriTeamHarvesterComeToBase
-  if dridriTeamMoveToTarget missile-range
+  if dridriTeamMoveToTarget (missile-range * .95)
   [ set mem0 (mem0 + 1) ]
 end
 
 to dridriTeamHarvesterPlantSeeds
-  ;Plantage des graines dans les patches qui en ont le moins
   if  (mem2 < 10)
-  [ 
-    ifelse mem5 = 0
+  [
+    ;La base nous attribut un patch dans mem5, on va vers celui-ci
+    if dridriTeamMoveToTarget 0 []
+    
+    ;Une fois qu'on a atteind le patch, on plante une graine et on se remet en attente d'un patch
+    if patch-here = mem5
     [
-      ;On demande à la base un endroit où planter les graines
-      let choosen 0
-      ask mem3 [ set choosen dridriTeamBaseGetPatchToSeed ]
-      set mem5 choosen
-      
-      ;Tant que la base nous donne un patch qui à déjà été attribué, on en redemande un autre
-      while [ count perceive-specific-robots color Harvesters with [ mem5 = choosen ] > 0]
-      [ 
-        ask mem3 [ set choosen dridriTeamBaseGetPatchToSeed ]
-        set mem5 choosen
-      ]
-      ask mem5 [ set pcolor green ]
-    ]
-    [
-      if dridriTeamMoveToTarget 0 []
-      
-      if patch-here = mem5
-      [
-        plant-seeds color max-seeds
-        ask mem5 [ set pcolor black ]
-        set mem5 0
-        set mem2 mem2 + 1
-      ]
+      plant-seeds color max-seeds
+      ask mem5 [ set pcolor black ]
+      set mem5 0
+      set mem2 mem2 + 1
     ]
   ]
   
@@ -283,14 +267,24 @@ end
 ;; --- BASE --- ;;
 ;;;;;;;;;;;;;;;;;;
 
-to-report dridriTeamBaseGetPatchToSeed
-  let possiblePatches (patches in-radius detection-range with [ (count Bases-here = 0) and (count Walls-here = 0)]) with-min [ count Seeds-here ]
-  report min-one-of (possiblePatches with-min [ distance self ]) [ distance myself ]
+to dridriTeamBaseAssignPatchesToHarvestingHarvesters
+  let harvestingHavesters (perceive-specific-robots color Harvesters) with [ (mem5 = 0) and (mem0 = 2) and (carrying-food? >= (seed-cost * max-seeds)) ]
+  let possiblePatches mem9 with-min [ count Seeds-here ]
+  let attributedPatches sort (min-n-of count harvestingHavesters possiblePatches [ distance myself ]);creating a list from an agentset
+  
+  let i 0
+  ask harvestingHavesters
+  [
+    let attributedPatch item i attributedPatches
+    ask attributedPatch [ set pcolor green ]
+    set mem5 attributedPatch
+    set i i + 1
+  ]
 end
 
 to dridriTeamBaseUpdateAvailableEnergy
   let dEnergy energy - mem11
-  set mem9 max (list 0 (mem9 + 0.80 * dEnergy))
+  set mem8 max (list 0 (mem8 + 0.80 * dEnergy))
 end
 
 to dridriTeamBaseRequests [ n b ]
@@ -326,13 +320,13 @@ end
 to dridriTeamBaseConditionalyRequestSoldier
   if mem10 != 0
   [
-      let soldierQuantity mem9 / dridriTeamGetBreedCost RocketLaunchers
+      let soldierQuantity mem8 / dridriTeamGetBreedCost RocketLaunchers
       let newSoldierAmount floor soldierQuantity
       
       if newSoldierAmount > 0
       [
         dridriTeamBaseRequests newSoldierAmount RocketLaunchers
-        set mem9 (mem9 - newSoldierAmount * dridriTeamGetBreedCost RocketLaunchers)
+        set mem8 (mem8 - newSoldierAmount * dridriTeamGetBreedCost RocketLaunchers)
       ]
   ]
 end
@@ -343,9 +337,9 @@ to dridriTeamBaseConditionalyRequestExplorer
 end
 
 to dridriTeamBaseConditionalyRequestBots
-  ;dridriTeamBaseConditionalyRequestHarvester
-  ;dridriTeamBaseConditionalyRequestSoldier
-  ;dridriTeamBaseConditionalyRequestExplorer
+  dridriTeamBaseConditionalyRequestHarvester
+  dridriTeamBaseConditionalyRequestSoldier
+  dridriTeamBaseConditionalyRequestExplorer
 end
 
 to dridriTeamBaseCreate [ b ]
@@ -374,45 +368,43 @@ to dridriTeamBaseCreateBots
   if create-ok? [ dridriTeamBaseCreate RocketLaunchers ]
 end
 
-to dridriTeamBaseLaunchFAF
-   let missileLaunchThreshold (min list missile-range detection-range) * .66
-  
-  ;Détection de tous les lanceurs de missiles ennemis à proximité
-  let ennemyTarget min-one-of (perceive-specific-robots ennemy RocketLaunchers) with [distance myself <= missileLaunchThreshold] [distance myself]
-  
-  ;Si l'on a trouvé un lanceur de missile on tire dessus quoi qu'il arrive.
-  ;Sinon on tire sur les énemis avec une probabilité d'autant plus grande qu'il est loin de la base
-  ifelse ennemyTarget != nobody
-  [
-    if nb-fafs = 0
-    [new-faf 1]
-    
-    launch-faf ennemyTarget
-  ]
-  [
-    set ennemyTarget min-one-of (perceive-robots ennemy) with [distance myself <= missileLaunchThreshold] [distance myself]
-    
-    if ennemyTarget != nobody
-    [
-      let probabilityNumber random-float missileLaunchThreshold
-      
-      if probabilityNumber >= distance ennemyTarget
-      [
-        if nb-fafs = 0
-        [ new-faf 1 ]
+to dridriTeamBaseLaunchFAF [ t ]
+  if nb-fafs = 0 [ new-faf 1 ]
+  launch-faf t
+end
 
-        launch-faf ennemyTarget
-      ]
+to dridriTeamBaseConditionnalyLaunchFAF
+  ;Détection de tous les lanceurs de missiles ennemis à proximité
+  ;let ennemySoldierAround perceive-specific-robots ennemy RocketLaunchers
+  let ennemySoldierAround perceive-robots ennemy
+  let ennemyList sort-on [ distance myself ] ennemySoldierAround
+  
+  let i 0
+  while [ i < length ennemyList ]
+  [
+    let possibleTarget item i ennemyList
+    set heading towards possibleTarget
+    
+    ;On récupère le nombre de harvesters dans un cône entre la base et une cible possible
+    let harvestersInWay (Harvesters with [ color = [color] of myself ]) in-cone (distance possibleTarget) 30
+    
+    if count harvestersInWay <= 3
+    [
+      dridriTeamBaseLaunchFAF possibleTarget
+      set i length ennemyList
     ]
+    set i (i + 1)
   ]
 end
 
 to goRedBase
+  ;Ce n'est pas la peine de lancer ce code toutes les ticks
+  dridriTeamBaseAssignPatchesToHarvestingHarvesters
   dridriTeamBaseUpdateAvailableEnergy
   dridriTeamBaseConditionalyRequestBots
   dridriTeamBaseCreateBots
 
-  dridriTeamBaseLaunchFAF
+  dridriTeamBaseConditionnalyLaunchFAF
   set mem11 energy
 end
 
@@ -437,5 +429,6 @@ end
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
   set mem11 energy
+  set mem9 (patches in-radius detection-range) with [ (count Bases-here = 0) and (count Walls-here = 0)]
   dridriTeamBaseRequests 15 Harvesters
 end
