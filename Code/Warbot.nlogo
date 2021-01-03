@@ -260,7 +260,7 @@ to go
   ]
 
   ; pour toutes les bases
-  ask Bases with [ color = red ][
+  ask Bases with [ color = red ] [
     ; teste si elles sont toujours en vie
     mort
     ; decremente le delai d'attente avant de pouvoir lancer un nouveau missile
@@ -1468,7 +1468,7 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -1184463 true "" "plot sum [mem9] of Bases with [ color = red ]"
+"default" 1.0 0 -13345367 true "" "plot sum [mem8] of Bases with [ color = red ]"
 
 @#$#@#$#@
 ## DE QUOI S'AGIT-IL?
