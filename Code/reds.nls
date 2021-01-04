@@ -323,17 +323,6 @@ to dridriTeamHarvesterFeedBase
   ]
 end
 
-to dridriTeamHarvesterSwitchBase
-  let b max-one-of my-bases [ distance myself ]
-  
-  set mem0 0
-  set mem1 nobody
-  set mem2 0
-  set mem3 patch ([xcor] of b) ([ycor] of b)
-  set mem4 500
-  set mem5 0
-end
-
 ;Se déplace aléatoirement. Quand ils trouvent de la nourriture en donne 80% à la base et plante ce qui reste
 to goRedHarvester
   let harvesterAround (perceive-specific-robots color Harvesters) with [ mem1 != nobody ] 
@@ -347,14 +336,6 @@ to goRedHarvester
   if mem0 = 1 [ dridriTeamHarvesterComeToBase ]
   if mem0 = 2 [ dridriTeamHarvesterPlantSeeds ]
   if mem0 = 3 [ dridriTeamHarvesterFeedBase ]
-  
-  ;Si la base à laquelle on était reliée meurt, on se réinitialise pour être lié à l'autre base
-  if distance mem3 <= detection-range
-  [
-    let baseHere perceive-base color
-    if baseHere = nobody
-    [ dridriTeamHarvesterSwitchBase ]
-  ]
 end
 
 ;;;;;;;;;;;;;;;;;;
@@ -373,7 +354,7 @@ to dridriTeamBaseAssignPatchesToHarvestingHarvesters
   ask demandingHarvesters
   [
     let attributedPatch item i attributedPatches
-    ;ask attributedPatch [ set pcolor green ]
+    ;ask attributedPatch [ set pcolor Red ]
     set mem5 attributedPatch
     set i i + 1
   ]
@@ -566,9 +547,8 @@ end
 
 ;; procedure pour initialiser les rocket-launchers rouges
 to initRedHarvester
-  let b min-one-of my-bases [ distance myself ]
   set mem1 nobody
-  set mem3 patch ([xcor] of b) ([ycor] of b)
+  set mem3 min-one-of my-bases [ distance myself ]
   set mem4 500
 end
 
