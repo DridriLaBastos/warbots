@@ -81,9 +81,25 @@ to dridriTeamExplorerRevealEnemyBase
   ]
 end
 
+to dridriTeamExplorerRevealFood
+  let foodAround perceive-food
+  
+  if any? foodAround
+  [
+    let f min-one-of foodAround [ distance myself ]
+    
+    ;On renseigne aux harvesters autour qui cherche de la nourriture en dehors de la base et qui n'en ont pas trouvé où en trouvé
+    ;comme les explorers ont un grand rayons de perception, ça peut êrmettre de trouver plus rapidement de la nourriture au début quand elle
+    ;est loin de la base
+    let harvestersAround (perceive-specific-robots color Harvesters) with [ (mem0 = 0) and (mem1 = nobody) and (mem4 = 500) ]
+    ask harvestersAround [ set mem1 f ]
+  ]
+end
+
 to goRedExplorer
   if mem0 = 0 [ dridriTeamExplorerSearchEnemyBases ]
   if mem0 = 1 [ dridriTeamExplorerRevealEnemyBase ]
+  dridriTeamExplorerRevealFood
 end
 
 ;;;;;;;;;;;;;;;;;;;;;
@@ -503,7 +519,7 @@ to dridriTeamBaseGiveEnergy
     let theChoosenOne min-one-of lowEnergyHarvesters [ energy ]
   
     ;On garde toujours de l'énergie pour créer au moins 2 harvesters
-    if energy >= 2 * dridriTeamGetBreedCost Harvesters [ give-energy theChoosenOne 1000 ]
+    if energy >= 6000 [ give-energy theChoosenOne 1000 ]
   ]
 end
 
