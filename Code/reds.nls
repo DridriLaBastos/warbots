@@ -106,7 +106,7 @@ to dridriTeamSoldierSwitchToAttack [ patchOfTargetBase ]
 end
 
 to-report dridriTeamSoldierChooseTarget
-  let patchTargets 0
+  let patchTargets []
     
   if (mem1 != 0) and (mem1 != -1) [ set patchTargets (list mem1) ]
   if (mem2 != 0) and (mem2 != -1) [ set patchTargets lput mem2 patchTargets ]
@@ -182,10 +182,15 @@ to dridriTeamSoldierAttack
 end
 
 to dridriTeamSoldierReturnBase
-  if dridriTeamMoveToTarget (.95 * [ detection-range ] of mem5)
+  ;On retourne à la base, si on a trop peu d'énergie, on se suicide autour de la base
+  if dridriTeamMoveToTarget (detection-range * .95)
   [
-    ;Quand on est arrivé à la base, celle-ci nous redonnera un point de rendez-vous auquel on ira
-    set mem0 0
+    ;Quand on est arrivé aux alentour de la base, on se suicide, ou alors en recommence la procédure d'aller attaquer
+    ;une base énemie parmis celles encore vivantes
+    ifelse energy <= 500
+    [ set energy 0]
+    [ set mem0 0 ]
+
   ]
 end
 
@@ -324,6 +329,9 @@ to goRedHarvester
   if count harvesterAround > 3
   [ set mem1 nobody ]
   dridriTeamHarvesterRevealFoodPosition
+  
+  let wallsAround perceive-walls
+  if count wallsAround > 0 [ take-wall min-one-of wallsAround [ distance myself ] ]
   if mem0 = 0 [ dridriTeamHarvesterSearchFood ]
   if mem0 = 1 [ dridriTeamHarvesterComeToBase ]
   if mem0 = 2 [ dridriTeamHarvesterPlantSeeds ]
@@ -470,10 +478,39 @@ to dridriTeamBaseConditionnalyLaunchFAF
   ]
 end
 
+to dridriTeamBaseUpdateTargetInformation
+  let soldiersAround (perceive-specific-robots color RocketLaunchers) with [ mem0 = 4 ]
+  
+  if count soldiersAround > 0
+  [
+    let s one-of soldiersAround
+    let defeatedEnnemyBase 0
+    
+    if [mem1] of s = -1 [ set defeatedEnnemyBase mem1 ]
+    if [ mem2 ] of s = -1 [ set defeatedEnnemyBase mem2 ]
+    
+    let newTargetList 0
+    
+    if defeatedEnnemyBase = item 0 mem10 [ set mem10 remove-item 0 mem10 ]
+    if defeatedEnnemyBase = item 1 mem10 [ set mem10 remove-item 1 mem10 ]
+  ]
+end
+
+to dridriTeamBaseGiveEnergy
+  let lowEnergyHarvesters (perceive-specific-robots color Harvesters) with [ energy < 1000 ]
+  
+  if count lowEnergyHarvesters > 0
+  [
+    let theChoosenOne min-one-of lowEnergyHarvesters [ energy ]
+  
+    ;On garde toujours de l'énergie pour créer au moins 2 harvesters
+    if energy >= 2 * dridriTeamGetBreedCost Harvesters [ give-energy theChoosenOne 1000 ]
+  ]
+end
+
 to goRedBase
-  ;On fait cette mise en mémoire ici car dans init base les murs ne sont pas encore placés et certains harvesters ne vont jamais réussir à atteindre
-  ; le patch s'il y a un mur dessus
-  if ticks = 0 [ set mem9 (patches in-radius detection-range) with [ (count Bases-here = 0) and (count Walls-here = 0)] ]
+  ;Toutes les 500 ticks on remet ç jour le cache des patches utilisables
+  if ticks mod 500 = 0 [ set mem9 (patches in-radius detection-range) with [ (count Bases-here = 0) and (count Walls-here = 0)] ]
   ;Ce n'est pas la peine de lancer ce code toutes les ticks
   dridriTeamBaseAssignPatchesToHarvestingHarvesters
   dridriTeamBaseUpdateAvailableEnergy
@@ -481,6 +518,8 @@ to goRedBase
   dridriTeamBaseCreateBots
 
   dridriTeamBaseConditionnalyLaunchFAF
+  dridriTeamBaseUpdateTargetInformation
+  dridriTeamBaseGiveEnergy
   set mem11 energy
 end
 
