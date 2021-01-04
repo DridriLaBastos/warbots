@@ -43,19 +43,21 @@ end
 ;; --- EXPLORER --- ;;
 ;;;;;;;;;;;;;;;;;;;;;;
 
+;On stocke le patch plutôt que la base car le patch sera accessibl tout le temps.
+;Si les soldats essaient de s'orienter vers la base alors qu'elle est morte, cela provoque un bug
 to dridriTeamExplorerSearchEnemyBases
   dridriTeamRandomMove
-  let enemyBase one-of perceive-base ennemy
+  let ennemyBase one-of perceive-base ennemy
   
-  if enemyBase != nobody
+  if ennemyBase != nobody
   [
     set mem0 (mem0 + 1)
-    set mem1 enemyBase
+    set mem1 patch ([xcor] of ennemyBase) ([ycor] of ennemyBase)
     set mem5 min-one-of my-bases [ distance myself ]
   ]
 end
 
-;On récupère une base qui n'a pas de coodonnées pour les bases énemies
+;On récupère une base qui n'a pas de coodonnées pour les bases énnemies
 to dridriTeamExplorerRevealEnemyBase
   ; Une fois que l'on est arrivé à distance de communication d'une base, on vérifie qu'elle ne contient pas déjà la position
   ; de la base que l'on contient et on lui donne cette info
@@ -98,13 +100,22 @@ to dridriTeamSoldierGoToMeetPoint
   ]
 end
 
-to dridriTeamSoldierSwitchToAttack [ baseTarget ]
+to dridriTeamSoldierSwitchToAttack [ patchOfTargetBase ]
   set mem0 2
-  set mem5 baseTarget
+  set mem5 patchOfTargetBase
+end
+
+to-report dridriTeamSoldierChooseTarget
+  let patchTargets 0
+    
+  if (mem1 != 0) and (mem1 != -1) [ set patchTargets (list mem1) ]
+  if (mem2 != 0) and (mem2 != -1) [ set patchTargets lput mem2 patchTargets ]
+  
+  report ifelse-value patchTargets = 0 [ nobody ] [ item (random length patchTargets) patchTargets ]
 end
 
 to dridriTeamSoldierWaitForAttack
-  ;On reste toujours dans un rayon de 2 en attendant d'alelr attaquer
+  ;On reste toujours dans un rayon de 2 autour du meetpoint en attendant d'aller attaquer
   if distance mem5 > 2 [ set heading towards mem5 ]
   dridriTeamRandomMove
   
@@ -112,17 +123,14 @@ to dridriTeamSoldierWaitForAttack
   let soldierAround perceive-specific-robots color RocketLaunchers
   if count soldierAround >= 4
   [
-    let r random 2
-    let baseTargets 0
+    let choosenTarget dridriTeamSoldierChooseTarget
     
-    if mem1 != 0 [ set baseTargets (list mem1) ]
-    if mem2 != 0 [ set baseTargets lput mem2 baseTargets ]
-    
-    let baseTarget item (random length baseTargets) baseTargets
-    
-    dridriTeamSoldierSwitchToAttack baseTarget
-    ask soldierAround with [ mem0 != 2 ]
-    [ dridriTeamSoldierSwitchToAttack baseTarget ]
+    if choosenTarget != nobody
+    [
+      dridriTeamSoldierSwitchToAttack choosenTarget
+      ask soldierAround with [ mem0 = 0 ]
+      [ dridriTeamSoldierSwitchToAttack choosenTarget ]
+    ]
   ]
 end
 
@@ -142,23 +150,25 @@ to-report dridriTeamSoldierLaunchRocket [ t ]
   ;print friendsBehind
   ;if (count friendsBehind = 0)
   ;[
-    ifelse nb-missiles > 0
-    [ launch-rocket towardsxy ([xcor] of t) ([ycor] of t) ]
-    [
-      if nb-fafs > 0
-      [ launch-faf t ]
-    ]
+  
+  ;On tire quand même sur les robots autour, cela leur fera perdre de l'énergi, si elle tombe trop bas ils iront peut être réclamer de l'énergie à la
+  ;base ce qui permet de lui faire perdre aussi de l'énergie
+    ;On ne tirera pas ici si on a déjà lancé un faf mais on n'a que 2 faf donc ça ne devrait pas poser trop de problèmes
+    if nb-missiles = 0 [ new-missile 1 ]
+    launch-rocket towardsxy ([pxcor] of t) ([pycor] of t)
+    
   ;]
   ;set heading saveHeading
-  report nb-fafs > 0
+  
+  report energy > 500
 end
 
-to dridriSoldierAttack
+to dridriTeamSoldierAttack
   ;On se balade dans un petit bandeau au 2/3 de la portée des missiles autour de la base
   if distance mem5 >= missile-range ;>= pour être sûr d'être toujours strictement dans la zone de portée des missiles
   [ set heading towards mem5 ]
   
-  if distance mem5 <= (missile-range * .66)
+  if distance mem5 <= (detection-range * .95)
   [ rt 60 ]
   
   dridriTeamRandomMove
@@ -174,24 +184,40 @@ end
 to dridriTeamSoldierReturnBase
   if dridriTeamMoveToTarget (.95 * [ detection-range ] of mem5)
   [
-    ;On se suicide pour le moment mais il faudra demander à se revigorer
-    set energy 0
+    ;Quand on est arrivé à la base, celle-ci nous redonnera un point de rendez-vous auquel on ira
+    set mem0 0
   ]
 end
 
 to goRedRocketLauncher
+  ;On essaie toujours de lancer nos deux fafs sur les robots énemis l'on croise
+  let ennemyAround perceive-specific-robots ennemy RocketLaunchers
+  if count ennemyAround = 0 [ set ennemyAround perceive-specific-robots ennemy Harvesters ]
+  
+  if (count ennemyAround > 0) and (nb-fafs > 0)
+  [ launch-faf min-one-of ennemyAround [ distance myself ]]
   if mem0 = 0 [ dridriTeamSoldierGoToMeetPoint ]
   if mem0 = 1 [ dridriTeamSoldierWaitForAttack ]
   if mem0 = 2 [ dridriTeamSoldierMoveToTarget  ]
   if mem0 = 3
   [
-    if [energy] of mem5 < 0
+    ;Dans le cas où on a tué la base, soit on change de cible, soit on retourne à la base apporter l'information que la base adverse est morte
+    if distance mem5 <= detection-range
     [
-      ifelse mem5 = mem1
-      [ set mem5 mem2 ]
-      [ set mem5 mem1 ]
+      let ennemyBase perceive-base ennemy
+      if count ennemyBase = 0
+      [
+        if mem5 = mem1 [ set mem1 -1 ]
+        if mem5 = mem2 [ set mem2 -1 ]
+        
+        let newTarget dridriTeamSoldierChooseTarget
+        
+        ifelse newTarget = nobody
+        [ set mem0 (mem0 + 1) ]
+        [ dridriTeamSoldierSwitchToAttack newTarget ]
+      ]
     ]
-    dridriSoldierAttack
+    dridriTeamSoldierAttack
   ]
   if mem0 = 4 [ dridriTeamSoldierReturnBase ]
 end
