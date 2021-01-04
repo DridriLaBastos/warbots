@@ -42,7 +42,6 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; --- EXPLORER --- ;;
 ;;;;;;;;;;;;;;;;;;;;;;
-
 ;On stocke le patch plutôt que la base car le patch sera accessibl tout le temps.
 ;Si les soldats essaient de s'orienter vers la base alors qu'elle est morte, cela provoque un bug
 to dridriTeamExplorerSearchEnemyBases
@@ -197,9 +196,9 @@ end
 to goRedRocketLauncher
   ;On essaie toujours de lancer nos deux fafs sur les robots énemis l'on croise
   let ennemyAround perceive-specific-robots ennemy RocketLaunchers
-  if count ennemyAround = 0 [ set ennemyAround perceive-specific-robots ennemy Harvesters ]
+  if not any? ennemyAround [ set ennemyAround perceive-specific-robots ennemy Harvesters ]
   
-  if (count ennemyAround > 0) and (nb-fafs > 0)
+  if (any? ennemyAround) and (nb-fafs > 0)
   [ launch-faf min-one-of ennemyAround [ distance myself ]]
   if mem0 = 0 [ dridriTeamSoldierGoToMeetPoint ]
   if mem0 = 1 [ dridriTeamSoldierWaitForAttack ]
@@ -210,7 +209,7 @@ to goRedRocketLauncher
     if distance mem5 <= detection-range
     [
       let ennemyBase perceive-base ennemy
-      if count ennemyBase = 0
+      if not any? ennemyBase
       [
         if mem5 = mem1 [ set mem1 -1 ]
         if mem5 = mem2 [ set mem2 -1 ]
@@ -331,7 +330,7 @@ to goRedHarvester
   dridriTeamHarvesterRevealFoodPosition
   
   let wallsAround perceive-walls
-  if count wallsAround > 0 [ take-wall min-one-of wallsAround [ distance myself ] ]
+  if any? wallsAround [ take-wall min-one-of wallsAround [ distance myself ] ]
   if mem0 = 0 [ dridriTeamHarvesterSearchFood ]
   if mem0 = 1 [ dridriTeamHarvesterComeToBase ]
   if mem0 = 2 [ dridriTeamHarvesterPlantSeeds ]
@@ -469,7 +468,7 @@ to dridriTeamBaseConditionnalyLaunchFAF
     ;On récupère le nombre de harvesters dans un cône entre la base et une cible possible
     let harvestersInWay (Harvesters with [ color = [color] of myself ]) in-cone (distance possibleTarget) 30
     
-    if count harvestersInWay = 0
+    if not any? harvestersInWay
     [
       dridriTeamBaseLaunchFAF possibleTarget
       set i length ennemyList
@@ -481,7 +480,7 @@ end
 to dridriTeamBaseUpdateTargetInformation
   let soldiersAround (perceive-specific-robots color RocketLaunchers) with [ mem0 = 4 ]
   
-  if count soldiersAround > 0
+  if any? soldiersAround
   [
     let s one-of soldiersAround
     let defeatedEnnemyBase 0
@@ -499,7 +498,7 @@ end
 to dridriTeamBaseGiveEnergy
   let lowEnergyHarvesters (perceive-specific-robots color Harvesters) with [ energy < 1000 ]
   
-  if count lowEnergyHarvesters > 0
+  if any? lowEnergyHarvesters
   [
     let theChoosenOne min-one-of lowEnergyHarvesters [ energy ]
   
@@ -510,7 +509,7 @@ end
 
 to goRedBase
   ;Toutes les 500 ticks on remet ç jour le cache des patches utilisables
-  if ticks mod 500 = 0 [ set mem9 (patches in-radius detection-range) with [ (count Bases-here = 0) and (count Walls-here = 0)] ]
+  if ticks mod 500 = 0 [ set mem9 (patches in-radius detection-range) with [ (not any? Bases-here) and (not any? Walls-here)] ]
   ;Ce n'est pas la peine de lancer ce code toutes les ticks
   dridriTeamBaseAssignPatchesToHarvestingHarvesters
   dridriTeamBaseUpdateAvailableEnergy
@@ -540,7 +539,7 @@ to initRedRocketLauncher
     if length ennemyBases = 2 [ set mem2 (item 1 ennemyBases) ]
   ]
   
-  let meetPointX (mean [ xcor ] of my-bases) - 10
+  let meetPointX (mean [ xcor ] of my-bases) - 15
   let meetPointY mean [ ycor ] of my-bases
   set mem5 (patch meetPointX meetPointY)
 end
