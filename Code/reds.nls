@@ -105,7 +105,6 @@ end
 ;;;;;;;;;;;;;;;;;;;;;
 ;; --- SOLDIER --- ;;
 ;;;;;;;;;;;;;;;;;;;;;
-
 to dridriTeamSoldierGoToMeetPoint
   let meetPoint mem5
   if dridriTeamMoveToTarget 1
@@ -116,8 +115,10 @@ to dridriTeamSoldierGoToMeetPoint
 end
 
 to dridriTeamSoldierSwitchToAttack [ patchOfTargetBase ]
-  set mem0 2
   set mem5 patchOfTargetBase
+  set mem0 2
+  ask (perceive-specific-robots color RocketLaunchers) with [ mem0 <= 1 ]
+  [ dridriTeamSoldierSwitchToAttack patchOfTargetBase ]
 end
 
 to-report dridriTeamSoldierChooseTarget
@@ -126,7 +127,7 @@ to-report dridriTeamSoldierChooseTarget
   if (mem1 != 0) and (mem1 != -1) [ set patchTargets (list mem1) ]
   if (mem2 != 0) and (mem2 != -1) [ set patchTargets lput mem2 patchTargets ]
   
-  report ifelse-value patchTargets = 0 [ nobody ] [ item (random length patchTargets) patchTargets ]
+  report ifelse-value patchTargets = [] [ nobody ] [ item (random length patchTargets) patchTargets ]
 end
 
 to dridriTeamSoldierWaitForAttack
@@ -135,17 +136,13 @@ to dridriTeamSoldierWaitForAttack
   dridriTeamRandomMove
   
   ;On envoie des groupes de commandos
-  let soldierAround perceive-specific-robots color RocketLaunchers
-  if count soldierAround >= 4
+  let soldierAroundWaiting (perceive-specific-robots color RocketLaunchers) with [ mem0 <= 1 ]
+  if count soldierAroundWaiting >= 4
   [
     let choosenTarget dridriTeamSoldierChooseTarget
     
     if choosenTarget != nobody
-    [
-      dridriTeamSoldierSwitchToAttack choosenTarget
-      ask soldierAround with [ mem0 = 0 ]
-      [ dridriTeamSoldierSwitchToAttack choosenTarget ]
-    ]
+    [ dridriTeamSoldierSwitchToAttack choosenTarget ]
   ]
 end
 
@@ -544,20 +541,13 @@ end
 
 ;; procedure pour initialiser les rocket-launchers rouges
 to initRedRocketLauncher
-  let creator my-bases with-min [ distance myself ]
-  let ennemyBases 0
-  
-  ask creator [ set ennemyBases mem10 ]
-  
-  if ennemyBases != 0
-  [
-    set mem1 (item 0 ennemyBases)
-    if length ennemyBases = 2 [ set mem2 (item 1 ennemyBases) ]
-  ]
-  
-  let meetPointX (mean [ xcor ] of my-bases) - 15
-  let meetPointY mean [ ycor ] of my-bases
-  set mem5 (patch meetPointX meetPointY)
+  let creator min-one-of my-bases [ distance myself ]
+  let ennemyBases [mem10] of creator
+
+  set mem1 (item 0 ennemyBases);On crée des soldats uniquement à partir du moment où mem10 vaut à au moins une valeur
+  if length ennemyBases = 2 [ set mem2 (item 1 ennemyBases) ]
+
+  set mem5 ([ mem5 ] of creator)
 end
 
 ;; procedure pour initialiser les rocket-launchers rouges
@@ -570,5 +560,10 @@ end
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
   set mem11 energy
+  
+  let meetPointX (mean [xcor] of my-bases) - 10
+  let meetPointY (mean [ycor] of my-bases)
+  set mem5 patch meetPointX meetPointY
+  
   dridriTeamBaseRequests 15 Harvesters
 end
