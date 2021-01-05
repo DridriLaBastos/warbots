@@ -188,7 +188,7 @@ to dridriTeamSoldierAttack
   ;Si on ne peut plus lancer de missile au prochain tour on rentre à la base
   if not dridriTeamSoldierLaunchRocket mem5
   [
-    set mem5 min-one-of my-bases [ distance myself ]
+    set mem5 one-of my-bases
     set mem0 (mem0 + 1)
   ]
 end
