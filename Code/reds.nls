@@ -353,7 +353,6 @@ end
 ;;;;;;;;;;;;;;;;;;
 ;; --- BASE --- ;;
 ;;;;;;;;;;;;;;;;;;
-
 to dridriTeamBaseAssignPatchesToHarvestingHarvesters
   let harvestingHarvesters (perceive-specific-robots color Harvesters) with [ (mem0 = 2) ]
   let demandingHarvesters harvestingHarvesters with [ mem5 = 0 ]
@@ -397,11 +396,12 @@ end
 
 ;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
 to dridriTeamBaseConditionalyRequestHarvester
-  if (ticks >= 1000) and (ticks mod 200 = 0)
+  ;Petit délai car au début les harvesters s'en vont chercher des ressources
+  if (ticks >= 1000)
   [
     let harvesterThreshold 8
     let harvesterNumber count perceive-specific-robots color Harvesters
-    if (harvesterNumber < harvesterThreshold)
+    if ((harvesterNumber < harvesterThreshold) and (energy >= (dridriTeamGetBreedCost Harvesters)))
     [ dridriTeamBaseRequests 1 Harvesters ]
   ]
 end
@@ -459,7 +459,7 @@ to dridriTeamBaseCreateBots
 end
 
 to dridriTeamBaseLaunchFAF [ t ]
-  if ticks mod 10 = 0
+  if ticks mod 3 = 0
   [
     if nb-fafs = 0 [ new-faf 1 ]
     launch-faf t
@@ -470,23 +470,31 @@ to dridriTeamBaseConditionnalyLaunchFAF
   ;Détection de tous les lanceurs de missiles ennemis à proximité
   let ennemySoldierAround perceive-specific-robots ennemy RocketLaunchers
   ;let ennemySoldierAround perceive-robots ennemy
-  let ennemyList sort-on [ distance myself ] ennemySoldierAround
   
-  let i 0
-  while [ i < length ennemyList ]
+  if any? ennemySoldierAround
   [
-    let possibleTarget item i ennemyList
-    set heading towards possibleTarget
+    let shoot? True
     
-    ;On récupère le nombre de harvesters dans un cône entre la base et une cible possible
-    let harvestersInWay (Harvesters with [ color = [color] of myself ]) in-cone (distance possibleTarget) 30
+    let t min-one-of ennemySoldierAround [ distance myself ]
+    let d (distance t)
+    set heading towards t
+    ;type t type "  " print d
     
-    if not any? harvestersInWay
+    let i 0
+    while [ (i < 3) and shoot? ]
     [
-      dridriTeamBaseLaunchFAF possibleTarget
-      set i length ennemyList
+      ;type "  " type (i * 1 / 3 * detection-range) type "  " print (30 + i * 30)
+      ifelse d >= i * 1 / 3 * detection-range
+      [
+        let harvestersInWay perceive-specific-robots-in-cone color Harvesters (20 + i * 20)
+        if any? harvestersInWay [ set shoot? False ];type "     " print "harvester found !" ]
+      ]
+      [ set i 3 ]
+      set i (i + 1)
     ]
-    set i (i + 1)
+    
+    if shoot?
+    [ dridriTeamBaseLaunchFAF t ]
   ]
 end
 
@@ -515,8 +523,7 @@ to dridriTeamBaseGiveEnergy
   [
     let theChoosenOne min-one-of lowEnergyHarvesters [ energy ]
   
-    ;On garde toujours de l'énergie pour créer au moins 2 harvesters
-    if energy >= 6000 [ give-energy theChoosenOne 1000 ]
+    if energy >= 3500 [ give-energy theChoosenOne 500 ]
   ]
 end
 
