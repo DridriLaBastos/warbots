@@ -373,7 +373,8 @@ end
 
 to dridriTeamBaseUpdateAvailableEnergy
   let dEnergy energy - mem11
-  set mem8 max (list 0 (mem8 + 0.70 * dEnergy))
+  let f ifelse-value energy >= 40000 [ 0.80 ] energy >= 50000 [ 0.90 ] energy >= 60000 [ 0.98 ] [ 0.70 ]
+  set mem8 max (list 0 (mem8 + f * dEnergy))
 end
 
 to dridriTeamBaseRequests [ n b ]
