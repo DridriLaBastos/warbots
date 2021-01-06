@@ -331,7 +331,7 @@ to dridriTeamHarvesterFeedBase
       set mem1 nobody
       set mem4 2000
     ]
-    [ set mem4 min (list 6000 (mem4 + 1000)) ]
+	[ set mem4 min (list 4000 (mem4 + 1000)) ]
   ]
 end
 
@@ -344,6 +344,13 @@ to goRedHarvester
   
   let wallsAround perceive-walls
   if any? wallsAround [ take-wall min-one-of wallsAround [ distance myself ] ]
+  if count my-bases = 1 ; Si l'on perd une base, tous les harvesters partent sur l'autres et se réinitialisent
+  [
+    set mem0 0
+    set mem1 nobody
+    set mem3 one-of my-bases
+    set mem5 0
+  ]
   if mem0 = 0 [ dridriTeamHarvesterSearchFood ]
   if mem0 = 1 [ dridriTeamHarvesterComeToBase ]
   if mem0 = 2 [ dridriTeamHarvesterPlantSeeds ]
@@ -357,13 +364,24 @@ to dridriTeamBaseAssignPatchesToHarvestingHarvesters
   let harvestingHarvesters (perceive-specific-robots color Harvesters) with [ (mem0 = 2) ]
   let demandingHarvesters harvestingHarvesters with [ mem5 = 0 ]
   
-  let possiblePatches (mem9 with-min [ count Seeds-here ]) with-min [ count harvestingHarvesters with [ mem5 = myself ] ]
-
+  let allPatches mem9
+  let seedNumber 0
+  let possiblePatches (allPatches with [ count Seeds-here = seedNumber ]) with-min [ count harvestingHarvesters with [ mem5 = myself ] ]
   let attributedPatches sort (min-n-of count demandingHarvesters possiblePatches [ distance myself ]);création d'une liste à partir d'un agent set
   
   let i 0
   ask demandingHarvesters
   [
+    ;Tant que tous les harvesters n'ont pas reçu de patch,
+   	;on recalcule des patchs à donner
+    while [ i >= length attributedPatches ]
+  	[
+      set seedNumber (seedNumber + 1)
+      set possiblePatches (allPatches with [ count Seeds-here = seedNumber ]) with-min [ count harvestingHarvesters with [ mem5 = myself ] ]
+      set attributedPatches sort (min-n-of count demandingHarvesters possiblePatches [ distance myself ])
+      set i 0
+  	]
+    
     let attributedPatch item i attributedPatches
     ;ask attributedPatch [ set pcolor Red ]
     set mem5 attributedPatch
@@ -524,7 +542,7 @@ to dridriTeamBaseGiveEnergy
   [
     let theChoosenOne min-one-of lowEnergyHarvesters [ energy ]
   
-    if energy >= 3500 [ give-energy theChoosenOne 500 ]
+    if energy >= 6500 [ give-energy theChoosenOne 500 ]
   ]
 end
 
