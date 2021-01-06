@@ -388,120 +388,73 @@ end
 to dridriTeamBaseUpdateAvailableEnergy
   let dEnergy energy - mem11
   
-  let soldierFactor (ifelse-value mem10 != 0 [.40] [0])
-  let harvesterFactor (ifelse-value ticks >= 1500 [.40] [0])
+  let usableDe dEnergy - 200
   
-  let soldierEnergy item 0 mem8
-  let harvesterEnergy item 1 mem8
+  if self = (base 0) and dEnergy != 0 [ type "de=" type dEnergy type "   udE=" print usableDe ]
   
-  set soldierEnergy soldierEnergy + soldierFactor * dEnergy
-  set soldierEnergy max (list 0 soldierEnergy)
+  if usableDe > 0
+  [
+  let harvesterFactor (ifelse-value ticks > 1000 [.40] [0])
+  let soldierFactor (ifelse-value mem10 != 0 [.60] [0])
   
-  set harvesterEnergy harvesterEnergy + harvesterFactor * dEnergy
+  let harvesterEnergy mem0
+  let soldierEnergy mem1
+
+  set harvesterEnergy harvesterEnergy + harvesterFactor * usableDe
   set harvesterEnergy max (list 0 harvesterEnergy)
-  
-  set mem8 (list soldierEnergy harvesterEnergy)
-end
 
-to dridriTeamBaseRequests [ n b ]
-  ifelse b = Harvesters
-  [ set mem0 max (list 0 (mem0 + n)) ]
-  [
-    ifelse b = Explorers
-    [ set mem1 max (list 0 (mem1 + n)) ]
-    [
-      if b = RocketLaunchers
-      [ set mem2 max (list 0 (mem2 + n)) ]
-    ]
-  ]
-  ;C'est quand même étrange que cette vession avec les if à la ligne ne fonctionne pas
-  ;if b = Harvesters [ set mem0 max (list 0 (mem0 + n)) ]
-  ;if b = Explorers [ set mem1 max (list 0 (mem1 + n)) ]
-  ;if b = RocketLaunchers [ set mem2 max (list 0 (mem2 + n)) ]
-  ;print (list mem0 mem1 mem2)
-end
+  set soldierEnergy soldierEnergy + soldierFactor * usableDe
+  set soldierEnergy max (list 0 soldierEnergy)
 
-to-report dridriTeamBaseGetRobotsAmount [ b en ]
-  let robotCost dridriTeamGetBreedCost b
-  let soldierQuantity en / robotCost
-  report floor soldierQuantity
-end
-
-to dridriTeamBaseDecreaseRobotEnergy [ b newAmount ]
-  ;if self = (base 0 ) [ print b type "   " type mem8 type " - " type newAmount ]
-  if b = RocketLaunchers[ set mem8 (list ((item 0 mem8) - newAmount) (item 1 mem8)) ]
-  if b = Harvesters [ set mem8 (list (item 0 mem8) ((item 1 mem8) - newAmount)) ]
-  ;if self = (base 0) [ type "  " print mem8 ]
-end
-
-;Si le nombre d'harvesters est plus petit qu'une certaine valeur, recréer des harvesters
-to dridriTeamBaseConditionalyRequestHarvester
-  ;Petit délai car au début les harvesters s'en vont chercher des ressources
-  if (ticks >= 1000)
-  [
-    ;let harvesterThreshold 8
-    ;let harvesterNumber count perceive-specific-robots color Harvesters
-    ;if ((harvesterNumber < harvesterThreshold) and (energy >= (dridriTeamGetBreedCost Harvesters)))
-    ;[ dridriTeamBaseRequests 1 Harvesters ]
-    
-    ;if ticks
-    ;if item 1 mem8 >= 2 * dridriTeamGetBreedCost Harvesters
-    ;[ dridriTeamBaseRequests 1 Harvesters ]
-    
-    let newHarvesterAmount dridriTeamBaseGetRobotsAmount Harvesters (item 1 mem8)
- 
-    dridriTeamBaseRequests newHarvesterAmount RocketLaunchers
-    let newHarvestersEnergy (item 1 mem8) 
-    dridriTeamBaseDecreaseRobotEnergy Harvesters (newHarvesterAmount * dridriTeamGetBreedCost Harvesters)
+  set mem0 harvesterEnergy
+  set mem1 soldierEnergy
   ]
 end
 
-;Si on a perdu de l'énergie  alors on enlèvera des soldats de la file d'attente
-to dridriTeamBaseConditionalyRequestSoldier
-  if mem10 != 0
-  [
-    let newSoldierAmount dridriTeamBaseGetRobotsAmount RocketLaunchers (item 0 mem8)
-    ;if self = (base 0) [ type "requested " type newSoldierAmount print " s"]
-    dridriTeamBaseRequests newSoldierAmount RocketLaunchers
-    dridriTeamBaseDecreaseRobotEnergy RocketLaunchers (newSoldierAmount * dridriTeamGetBreedCost RocketLaunchers)
-  ]
-end
-
-to dridriTeamBaseConditionalyRequestExplorer
-  if ((mem10 = 0) or (length mem10 != 2)) and (ticks mod 400 = 0)
-  [ dridriTeamBaseRequests 1 Explorers ]
-end
-
-to dridriTeamBaseConditionalyRequestBots
-  dridriTeamBaseConditionalyRequestHarvester
-  dridriTeamBaseConditionalyRequestSoldier
-  dridriTeamBaseConditionalyRequestExplorer
+to dridriTeamBaseDecreaseRobotEnergy [ b amount ]
+  ;if self = (base 0 ) [ print b type "   " type (list mem0 mem1) type " - " type newAmount ]
+  if b = Harvesters [ set mem0 (mem0 - amount) ]
+  if b = RocketLaunchers[ set mem1 (mem1 - amount) ]
+  ;if self = (base 0) [ type "  " print (list mem0 mem1) ]
 end
 
 to dridriTeamBaseCreate [ b ]
-  if (b = Harvesters) and (mem0 > 0)
+  ;Il y a des bugs dans Netlogo si on ne fait pas les ifelse
+  ifelse (b = Harvesters)
   [
-    new-Harvester self
-    set mem0 (mem0 - 1)
+    if create-ok?
+    [
+      new-Harvester self
+      dridriTeamBaseDecreaseRobotEnergy Harvesters harvester-cost
+    ]
   ]
-
-  if (b = Explorers) and (mem1 > 0)
   [
-    new-Explorer self
-    set mem1 (mem1 - 1)
-  ]
-  
-  if (b = RocketLaunchers) and (mem2 > 0)
-  [
-    new-RocketLauncher self
-    set mem2 (mem2 - 1)
+    ifelse (b = Explorers)
+    [
+      if create-ok?
+      [
+        new-Explorer self
+        set mem2 (mem2 - 1)
+      ]
+    ]
+    [
+      if (b = RocketLaunchers)
+      [
+        if create-ok?
+        [
+          new-RocketLauncher self
+          dridriTeamBaseDecreaseRobotEnergy RocketLaunchers rocket-launcher-cost
+        ]
+      ]
+    ]
   ]
 end
 
-to dridriTeamBaseCreateBots
-  if create-ok? [ dridriTeamBaseCreate Harvesters ]
-  if create-ok? [ dridriTeamBaseCreate Explorers ]
-  if create-ok? [ dridriTeamBaseCreate RocketLaunchers ]
+to dridriTeamBaseConditionalyCreateBots
+  if ((mem10 = 0) or (length mem10 != 2)) and (ticks mod 400 = 0) [ set mem2 (mem2 + 1) ]
+  if mem0 >= harvester-cost [ dridriTeamBaseCreate Harvesters ]
+  if mem1 >= rocket-launcher-cost [ dridriTeamBaseCreate RocketLaunchers ]
+  if mem2 > 0 [ dridriTeamBaseCreate Explorers ]
 end
 
 to dridriTeamBaseLaunchFAF [ t ]
@@ -532,7 +485,7 @@ to dridriTeamBaseConditionnalyLaunchFAF
       ;type "  " type (i * 1 / 3 * detection-range) type "  " print (30 + i * 30)
       ifelse d >= i * 1 / 3 * detection-range
       [
-        let harvestersInWay perceive-specific-robots-in-cone color Harvesters (20 + i * 20)
+        let harvestersInWay perceive-specific-robots-in-cone color Harvesters (25 + i * 25)
         if any? harvestersInWay [ set shoot? False ];type "     " print "harvester found !" ]
       ]
       [ set i 3 ]
@@ -553,7 +506,7 @@ to dridriTeamBaseUpdateTargetInformation
     let defeatedEnnemyBase 0
     
     if [mem1] of s = -1 [ set defeatedEnnemyBase mem1 ]
-    if [ mem2 ] of s = -1 [ set defeatedEnnemyBase mem2 ]
+    if [mem2] of s = -1 [ set defeatedEnnemyBase mem2 ]
     
     let newTargetList 0
     
@@ -563,15 +516,14 @@ to dridriTeamBaseUpdateTargetInformation
 end
 
 to dridriTeamBaseGiveEnergy
-  let lowEnergyHarvesters (perceive-specific-robots color Harvesters) with [ energy < 1000 ]
+  let lowEnergyHarvesters (perceive-specific-robots color Harvesters) with [ energy < 500 ]
   let lowEnergySoldiers (perceive-specific-robots color RocketLaunchers) with [ (energy < 500) and (mem0 = 4)]
   
   if any? lowEnergyHarvesters
   [
     let theChoosenOne min-one-of lowEnergyHarvesters [ energy ]
-    let energyRequested 500
-    let energyAmount min (list item 1 mem8 energyRequested)
-
+    let energyRequested harvester-nrj - [energy] of theChoosenOne
+    let energyAmount min (list mem0 energyRequested)
     if energyAmount > 0
     [
       give-energy theChoosenOne energyAmount
@@ -583,7 +535,7 @@ to dridriTeamBaseGiveEnergy
   [
     let theChoosenOne max-one-of lowEnergySoldiers [ energy ]
     let energyRequested rocket-launcher-nrj - [energy] of theChoosenOne
-    let energyAmount min (list energyRequested (item 0 mem8))
+    let energyAmount min (list energyRequested mem0)
     
     ifelse energyAmount > 0
     [
@@ -615,8 +567,7 @@ to goRedBase
   ;Ce n'est pas la peine de lancer ce code toutes les ticks
   dridriTeamBaseAssignPatchesToHarvestingHarvesters
   dridriTeamBaseUpdateAvailableEnergy
-  dridriTeamBaseConditionalyRequestBots
-  dridriTeamBaseCreateBots
+  dridriTeamBaseConditionalyCreateBots
 
   dridriTeamBaseConditionnalyLaunchFAF
   dridriTeamBaseUpdateTargetInformation
@@ -648,12 +599,12 @@ end
 
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
-  set mem8 (list 0 0)
-  set mem11 energy
+  ;au départ on crée 15 harvesters 
+  set mem0 (15 * harvester-cost)
   
   let meetPointX (mean [xcor] of my-bases) - 10
   let meetPointY (mean [ycor] of my-bases)
   set mem5 patch meetPointX meetPointY
-  
-  dridriTeamBaseRequests 15 Harvesters
+
+  set mem11 energy
 end
