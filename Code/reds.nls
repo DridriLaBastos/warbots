@@ -195,14 +195,10 @@ end
 
 to dridriTeamSoldierReturnBase
   ;On retourne à la base, si on a trop peu d'énergie, on se suicide autour de la base
-  if dridriTeamMoveToTarget (detection-range * .95)
+  if dridriTeamMoveToTarget (5)
   [
-    ;Quand on est arrivé aux alentour de la base, on se suicide, ou alors en recommence la procédure d'aller attaquer
-    ;une base énemie parmis celles encore vivantes
-    ifelse energy <= 500
-    [ set energy 0]
-    [ set mem0 0 ]
-
+    ;Si on arrive proche de la base sans avoir reçu de l'énergie on se tue afin que tous les harvesters puissent récupérer de l'énergie
+    set energy 0
   ]
 end
 
@@ -391,8 +387,20 @@ end
 
 to dridriTeamBaseUpdateAvailableEnergy
   let dEnergy energy - mem11
-  let f (ifelse-value energy >= 40000 [ 0.80 ] energy >= 50000 [ 0.90 ] energy >= 60000 [ 0.98 ] [ 0.70 ])
-  set mem8 max (list 0 (mem8 + f * dEnergy))
+  
+  let soldierFactor (ifelse-value mem10 != 0 [.40] [0])
+  let harvesterFactor (ifelse-value ticks >= 1500 [.40] [0])
+  
+  let soldierEnergy item 0 mem8
+  let harvesterEnergy item 1 mem8
+  
+  set soldierEnergy soldierEnergy + soldierFactor * dEnergy
+  set soldierEnergy max (list 0 soldierEnergy)
+  
+  set harvesterEnergy harvesterEnergy + harvesterFactor * dEnergy
+  set harvesterEnergy max (list 0 harvesterEnergy)
+  
+  set mem8 (list soldierEnergy harvesterEnergy)
 end
 
 to dridriTeamBaseRequests [ n b ]
@@ -413,15 +421,38 @@ to dridriTeamBaseRequests [ n b ]
   ;print (list mem0 mem1 mem2)
 end
 
-;Si le nombre d'harvesters est plus petit qu'une certaines valeur, recréer des harvesters
+to-report dridriTeamBaseGetRobotsAmount [ b en ]
+  let robotCost dridriTeamGetBreedCost b
+  let soldierQuantity en / robotCost
+  report floor soldierQuantity
+end
+
+to dridriTeamBaseDecreaseRobotEnergy [ b newAmount ]
+  ;if self = (base 0 ) [ print b type "   " type mem8 type " - " type newAmount ]
+  if b = RocketLaunchers[ set mem8 (list ((item 0 mem8) - newAmount) (item 1 mem8)) ]
+  if b = Harvesters [ set mem8 (list (item 0 mem8) ((item 1 mem8) - newAmount)) ]
+  ;if self = (base 0) [ type "  " print mem8 ]
+end
+
+;Si le nombre d'harvesters est plus petit qu'une certaine valeur, recréer des harvesters
 to dridriTeamBaseConditionalyRequestHarvester
   ;Petit délai car au début les harvesters s'en vont chercher des ressources
   if (ticks >= 1000)
   [
-    let harvesterThreshold 8
-    let harvesterNumber count perceive-specific-robots color Harvesters
-    if ((harvesterNumber < harvesterThreshold) and (energy >= (dridriTeamGetBreedCost Harvesters)))
-    [ dridriTeamBaseRequests 1 Harvesters ]
+    ;let harvesterThreshold 8
+    ;let harvesterNumber count perceive-specific-robots color Harvesters
+    ;if ((harvesterNumber < harvesterThreshold) and (energy >= (dridriTeamGetBreedCost Harvesters)))
+    ;[ dridriTeamBaseRequests 1 Harvesters ]
+    
+    ;if ticks
+    ;if item 1 mem8 >= 2 * dridriTeamGetBreedCost Harvesters
+    ;[ dridriTeamBaseRequests 1 Harvesters ]
+    
+    let newHarvesterAmount dridriTeamBaseGetRobotsAmount Harvesters (item 1 mem8)
+ 
+    dridriTeamBaseRequests newHarvesterAmount RocketLaunchers
+    let newHarvestersEnergy (item 1 mem8) 
+    dridriTeamBaseDecreaseRobotEnergy Harvesters (newHarvesterAmount * dridriTeamGetBreedCost Harvesters)
   ]
 end
 
@@ -429,14 +460,10 @@ end
 to dridriTeamBaseConditionalyRequestSoldier
   if mem10 != 0
   [
-      let soldierQuantity mem8 / dridriTeamGetBreedCost RocketLaunchers
-      let newSoldierAmount floor soldierQuantity
-      
-      if newSoldierAmount > 0
-      [
-        dridriTeamBaseRequests newSoldierAmount RocketLaunchers
-        set mem8 (mem8 - newSoldierAmount * dridriTeamGetBreedCost RocketLaunchers)
-      ]
+    let newSoldierAmount dridriTeamBaseGetRobotsAmount RocketLaunchers (item 0 mem8)
+    ;if self = (base 0) [ type "requested " type newSoldierAmount print " s"]
+    dridriTeamBaseRequests newSoldierAmount RocketLaunchers
+    dridriTeamBaseDecreaseRobotEnergy RocketLaunchers (newSoldierAmount * dridriTeamGetBreedCost RocketLaunchers)
   ]
 end
 
@@ -537,12 +564,48 @@ end
 
 to dridriTeamBaseGiveEnergy
   let lowEnergyHarvesters (perceive-specific-robots color Harvesters) with [ energy < 1000 ]
+  let lowEnergySoldiers (perceive-specific-robots color RocketLaunchers) with [ (energy < 500) and (mem0 = 4)]
   
   if any? lowEnergyHarvesters
   [
     let theChoosenOne min-one-of lowEnergyHarvesters [ energy ]
+    let energyRequested 500
+    let energyAmount min (list item 1 mem8 energyRequested)
+
+    if energyAmount > 0
+    [
+      give-energy theChoosenOne energyAmount
+      dridriTeamBaseDecreaseRobotEnergy Harvesters energyAmount
+    ]
+  ]
   
-    if energy >= 6500 [ give-energy theChoosenOne 500 ]
+  if any? lowEnergySoldiers
+  [
+    let theChoosenOne max-one-of lowEnergySoldiers [ energy ]
+    let energyRequested rocket-launcher-nrj - [energy] of theChoosenOne
+    let energyAmount min (list energyRequested (item 0 mem8))
+    
+    ifelse energyAmount > 0
+    [
+      give-energy theChoosenOne energyAmount
+      dridriTeamBaseDecreaseRobotEnergy RocketLaunchers energyAmount
+      
+      let ennemyBases mem10
+      ;la base réinitialise sont soldat
+      ;Peut être lui recréer des missiles ?
+      ask theChoosenOne
+      [
+        set mem0 0
+        set mem1 (item 0 ennemyBases)
+        set mem2 ifelse-value length ennemyBases = 2 [ item 1 ennemyBases ] [0]
+        set mem3 0
+        set mem4 0
+        set mem5 [mem5] of myself
+      ]
+    ]
+    ;Si on a pas assez d'énergie pour revitaliser le soldat, on le tue, il nous donnera quelque burgers et donc participera à la
+    ;survie de la base
+    [ ask theChoosenOne [ set energy 0 ] ]
   ]
 end
 
@@ -585,6 +648,7 @@ end
 
 ;; procedure pour initialiser les bases rougesinifinie
 to initRedBase
+  set mem8 (list 0 0)
   set mem11 energy
   
   let meetPointX (mean [xcor] of my-bases) - 10

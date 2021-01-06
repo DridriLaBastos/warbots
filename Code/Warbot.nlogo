@@ -1454,10 +1454,10 @@ NIL
 1
 
 PLOT
-1052
-207
-1252
-357
+1010
+177
+1210
+327
 plot 3
 NIL
 NIL
@@ -1469,7 +1469,8 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -13345367 true "" "plot sum [mem8] of Bases with [ color = red ]"
+"pen-1" 1.0 0 -5298144 true "" "plot item 0 ([mem8] of (base 0))"
+"pen-2" 1.0 0 -13210332 true "" "plot item 1 ([mem8] of (base 0))"
 
 @#$#@#$#@
 ## DE QUOI S'AGIT-IL?
