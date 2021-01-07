@@ -240,9 +240,10 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;
 to dridriTeamHarvesterRevealFoodPosition
   ;On dit aux autre harvesters qui cherchent de la nourriture où se trouve la source que l'on a trouvée
+  let harvesterAround (perceive-specific-robots color Harvesters) with [ mem4 = 500 and mem1 = nobody ]
+
   if mem1 != nobody
   [
-    let harvesterAround (perceive-specific-robots color Harvesters) with [ mem4 = 500 and mem1 = nobody ] 
     ifelse count harvesterAround > 3
     [ set mem1 nobody ]
     [
@@ -338,9 +339,6 @@ end
 
 ;Se déplace aléatoirement. Quand ils trouvent de la nourriture en donne 80% à la base et plante ce qui reste
 to goRedHarvester
-  let harvesterAround (perceive-specific-robots color Harvesters) with [ mem1 != nobody ] 
-  if count harvesterAround > 3
-  [ set mem1 nobody ]
   dridriTeamHarvesterRevealFoodPosition
   
   let wallsAround perceive-walls
@@ -393,14 +391,15 @@ end
 to dridriTeamBaseUpdateAvailableEnergy
   let dEnergy energy - mem11
   
-  let usableDe dEnergy - 200
+  
+  let usableDe (energy / 10000) * dEnergy
   
   ;if self = (base 0) and dEnergy != 0 [ type "de=" type dEnergy type "   udE=" print usableDe ]
   
   if usableDe > 0
   [
     let harvesterFactor (ifelse-value ticks > 1000 [.40] [0])
-    let soldierFactor (ifelse-value mem10 != 0 [.60] [0])
+    let soldierFactor (ifelse-value ticks > 1000 [0.60] [1])
   
     let harvesterEnergy mem0
     let soldierEnergy mem1
@@ -458,7 +457,7 @@ end
 to dridriTeamBaseConditionalyCreateBots
   if ((mem10 = 0) or (length mem10 != 2)) and (ticks mod 400 = 0) [ set mem2 (mem2 + 1) ]
   if mem0 >= harvester-cost [ dridriTeamBaseCreate Harvesters ]
-  if mem1 >= rocket-launcher-cost [ dridriTeamBaseCreate RocketLaunchers ]
+  if mem1 >= rocket-launcher-cost and (mem10 != 0) [ dridriTeamBaseCreate RocketLaunchers ]
   if mem2 > 0 [ dridriTeamBaseCreate Explorers ]
 end
 
@@ -570,6 +569,9 @@ to goRedBase
   ;Toutes les 500 ticks on remet ç jour le cache des patches utilisables
   if ticks mod 500 = 0 [ set mem9 (patches in-radius detection-range) with [ (not any? Bases-here) and (not any? Walls-here)] ]
   ;Ce n'est pas la peine de lancer ce code toutes les ticks
+  let saveE energy
+  let s0 mem0
+  let s1 mem1
   dridriTeamBaseAssignPatchesToHarvestingHarvesters
   dridriTeamBaseUpdateAvailableEnergy
   dridriTeamBaseConditionalyCreateBots
@@ -578,6 +580,17 @@ to goRedBase
   dridriTeamBaseUpdateTargetInformation
   dridriTeamBaseGiveEnergy
   set mem11 energy
+  
+  if self = (base 0)
+  [
+    if (energy != saveE) or (s0 != mem0) or (s1 != mem1)
+    [
+      print (list saveE s0 s1)
+      print (list energy mem0 mem1)
+      print (list (energy - saveE) (mem0 - s0) (mem1 - s1))
+      print ""
+    ]
+  ]
 end
 
 ;; procedure pour initialiser les explorers rouges
