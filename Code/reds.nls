@@ -242,12 +242,17 @@ to dridriTeamHarvesterRevealFoodPosition
   ;On dit aux autre harvesters qui cherchent de la nourriture où se trouve la source que l'on a trouvée
   if mem1 != nobody
   [
-    let callerMem1 mem1
-    ask (perceive-specific-robots color Harvesters) with [ mem4 = 500 ]
+    let harvesterAround (perceive-specific-robots color Harvesters) with [ mem4 = 500 and mem1 = nobody ] 
+    ifelse count harvesterAround > 3
+    [ set mem1 nobody ]
     [
+      let callerMem1 mem1
+      ask harvesterAround
+      [
         if distance callerMem1 > 2
         [ if mem1 = nobody [ set mem1 callerMem1 ] ]
       ]
+    ]
   ]
 end
 

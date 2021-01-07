@@ -1471,6 +1471,7 @@ false
 PENS
 "pen-1" 1.0 0 -5298144 true "" "plot [mem1] of (base 0)"
 "pen-2" 1.0 0 -13210332 true "" "plot [mem0] of (base 0)"
+"pen-3" 1.0 0 -14070903 true "" "plot [energy] of (base 0)"
 
 @#$#@#$#@
 ## DE QUOI S'AGIT-IL?
