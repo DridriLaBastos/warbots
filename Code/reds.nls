@@ -502,15 +502,13 @@ to dridriTeamBaseUpdateTargetInformation
   if any? soldiersAround
   [
     let s one-of soldiersAround
-    let defeatedEnnemyBase 0
+    let alivedEnnemyBase 0
     
-    if [mem1] of s = -1 [ set defeatedEnnemyBase mem1 ]
-    if [mem2] of s = -1 [ set defeatedEnnemyBase mem2 ]
+    if [mem1] of s = -1 [ set alivedEnnemyBase mem2 ]
+    if [mem2] of s = -1 [ set alivedEnnemyBase mem1 ]
     
-    let newTargetList 0
-    
-    if defeatedEnnemyBase = item 0 mem10 [ set mem10 remove-item 0 mem10 ]
-    if defeatedEnnemyBase = item 1 mem10 [ set mem10 remove-item 1 mem10 ]
+    if alivedEnnemyBase = item 0 mem10 [ set mem10 remove-item 0 mem10 ]
+    if alivedEnnemyBase = item 1 mem10 [ set mem10 remove-item 1 mem10 ]
   ]
 end
 
