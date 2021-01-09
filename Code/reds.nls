@@ -457,42 +457,42 @@ to dridriTeamBaseConditionalyCreateBots
 end
 
 to dridriTeamBaseLaunchFAF [ t ]
-  if ticks mod 3 = 0
-  [
     if nb-fafs = 0 [ new-faf 1 ]
     launch-faf t
-  ]
 end
 
 to dridriTeamBaseConditionnalyLaunchFAF
   ;Détection de tous les lanceurs de missiles ennemis à proximité
   let ennemySoldierAround perceive-specific-robots ennemy RocketLaunchers
-  ;let ennemySoldierAround perceive-robots ennemy
+  let ennemyList sort-on [distance myself] ennemySoldierAround
   
-  if any? ennemySoldierAround
+  let i 0
+  while [i < length ennemyList ]
   [
+    let choosenTarget item i ennemyList
+    set heading towards choosenTarget
+    
+    let a 90
+    let j 0
     let shoot? True
     
-    let t min-one-of ennemySoldierAround [ distance myself ]
-    let d (distance t)
-    set heading towards t
-    ;type t type "  " print d
-    
-    let i 0
-    while [ (i < 3) and shoot? ]
+    while [(j < 3) and shoot? ]
     [
-      ;type "  " type (i * 1 / 3 * detection-range) type "  " print (30 + i * 30)
-      ifelse d >= i * 1 / 3 * detection-range
-      [
-        let harvestersInWay perceive-specific-robots-in-cone color Harvesters (25 + i * 25)
-        if any? harvestersInWay [ set shoot? False ];type "     " print "harvester found !" ]
-      ]
-      [ set i 3 ]
-      set i (i + 1)
+      let zoneRadius (j + 1) / 3 * detection-range
+      let d min (list (distance choosenTarget) zoneRadius)
+      
+      let harvesterAround (Harvesters with [ color = friend ]) in-radius d
+      let harvesterInWay harvesterAround in-cone d (a * (3 - j) / 3)
+      if any? harvesterInWay [ set shoot? False ]
+      set j (j + 1)
     ]
     
     if shoot?
-    [ dridriTeamBaseLaunchFAF t ]
+    [
+      dridriTeamBaseLaunchFAF choosenTarget
+      set i (length ennemyList + 1)
+    ]
+    set i (i + 1)
   ]
 end
 
