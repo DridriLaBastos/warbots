@@ -361,10 +361,11 @@ end
 to dridriTeamBaseAssignPatchesToHarvestingHarvesters
   let harvestingHarvesters (perceive-specific-robots color Harvesters) with [ (mem0 = 2) ]
   let demandingHarvesters harvestingHarvesters with [ mem5 = 0 ]
+  let assignedHarvesters harvestingHarvesters with [mem5 != 0]
   
   let allPatches mem9
   let seedNumber 0
-  let possiblePatches (allPatches with [ count Seeds-here = seedNumber ]) with-min [ count harvestingHarvesters with [ mem5 = myself ] ]
+  let possiblePatches (allPatches with [ count Seeds-here = seedNumber ]) with [ (count assignedHarvesters with [ mem5 = myself ]) = 0 ]
   let attributedPatches sort-on [distance myself] possiblePatches
   
   let i 0
@@ -375,7 +376,7 @@ to dridriTeamBaseAssignPatchesToHarvestingHarvesters
     while [ i >= length attributedPatches ]
   	[
       set seedNumber (seedNumber + 1)
-      set possiblePatches (allPatches with [ count Seeds-here = seedNumber ]) with-min [ count harvestingHarvesters with [ mem5 = myself ] ]
+      set possiblePatches (allPatches with [ count Seeds-here = seedNumber ]) with [ (count assignedHarvesters with [ mem5 = myself ]) = 0 ]
       set attributedPatches sort-on [distance myself] possiblePatches
       set i 0
   	]
@@ -457,8 +458,11 @@ to dridriTeamBaseConditionalyCreateBots
 end
 
 to dridriTeamBaseLaunchFAF [ t ]
+  if ticks mod 3 = 0 
+  [
     if nb-fafs = 0 [ new-faf 1 ]
     launch-faf t
+  ]
 end
 
 to dridriTeamBaseConditionnalyLaunchFAF
