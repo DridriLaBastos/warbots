@@ -1474,10 +1474,10 @@ PENS
 "totals" 1.0 0 -14070903 true "" "plot (ifelse-value ticks > 20 [sum [energy] of (Bases with [color = red])][0])"
 
 PLOT
-1012
-387
-1401
-546
+1082
+461
+1282
+611
 plot 3
 NIL
 NIL
@@ -1489,8 +1489,8 @@ true
 false
 "" ""
 PENS
-"harvesters" 1.0 0 -12087248 true "" "plot count (Harvesters with [color = red])"
-"pen-1" 1.0 0 -5298144 true "" "plot count (RocketLaunchers with [color = red])"
+"harvesters" 1.0 0 -12087248 true "" "count (Harvesters with [color = red])"
+"pen-1" 1.0 0 -5298144 true "" "count (RocketLaunchers with [color = red])"
 
 @#$#@#$#@
 ## DE QUOI S'AGIT-IL?
