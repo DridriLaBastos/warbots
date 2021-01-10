@@ -28,12 +28,6 @@ to-report dridriTeamMoveToTarget [ d ]
   ]
 end
 
-to-report dridriTeamGetBreedCost [ b ]
-  if b = Harvesters [ report harvester-cost ]
-  if b = Explorers  [ report explorer-cost ]
-  if b = RocketLaunchers [ report rocket-launcher-cost ]
-end
-
 to dridriTeamRandomMove
   set heading heading - 20 + random 40
   dridriTeamForwardMove
@@ -42,8 +36,7 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; --- EXPLORER --- ;;
 ;;;;;;;;;;;;;;;;;;;;;;
-;On stocke le patch plutôt que la base car le patch sera accessibl tout le temps.
-;Si les soldats essaient de s'orienter vers la base alors qu'elle est morte, cela provoque un bug
+
 to dridriTeamExplorerSearchEnemyBases
   dridriTeamRandomMove
   let ennemyBase one-of perceive-base ennemy
@@ -56,7 +49,6 @@ to dridriTeamExplorerSearchEnemyBases
   ]
 end
 
-;On récupère une base qui n'a pas de coodonnées pour les bases énnemies
 to dridriTeamExplorerRevealEnemyBase
   ; Une fois que l'on est arrivé à distance de communication d'une base, on vérifie qu'elle ne contient pas déjà la position
   ; de la base que l'on contient et on lui donne cette info
@@ -156,21 +148,8 @@ to dridriTeamSoldierMoveToTarget
 end
 
 to-report dridriTeamSoldierLaunchRocket [ t ]
-  ;let saveHeading heading
-  ;set heading towards t
-  ;let friendsBehind perceive-specific-robots-in-cone color RocketLaunchers 5
-  ;print friendsBehind
-  ;if (count friendsBehind = 0)
-  ;[
-  
-  ;On tire quand même sur les robots autour, cela leur fera perdre de l'énergi, si elle tombe trop bas ils iront peut être réclamer de l'énergie à la
-  ;base ce qui permet de lui faire perdre aussi de l'énergie
-    ;On ne tirera pas ici si on a déjà lancé un faf mais on n'a que 2 faf donc ça ne devrait pas poser trop de problèmes
-    if nb-missiles = 0 [ new-missile 1 ]
-    launch-rocket towardsxy ([pxcor] of t) ([pycor] of t)
-    
-  ;]
-  ;set heading saveHeading
+  if nb-missiles = 0 [ new-missile 1 ]
+  launch-rocket towardsxy ([pxcor] of t) ([pycor] of t)
   
   report energy > 500
 end
@@ -373,7 +352,7 @@ to dridriTeamBaseAssignPatchesToHarvestingHarvesters
   [
     ;Tant que tous les harvesters n'ont pas reçu de patch,
    	;on recalcule des patchs à donner
-    while [ i >= length attributedPatches ]
+    if [ i >= length attributedPatches ]
   	[
       set seedNumber (seedNumber + 1)
       set possiblePatches (allPatches with [ count Seeds-here = seedNumber ]) with [ (count assignedHarvesters with [ mem5 = myself ]) = 0 ]
@@ -412,10 +391,8 @@ to dridriTeamBaseUpdateAvailableEnergy
 end
 
 to dridriTeamBaseDecreaseRobotEnergy [ b amount ]
-  ;if self = (base 0 ) [ print b type "   " type (list mem0 mem1) type " - " type newAmount ]
   if b = Harvesters [ set mem0 (mem0 - amount) ]
   if b = RocketLaunchers[ set mem1 (mem1 - amount) ]
-  ;if self = (base 0) [ type "  " print (list mem0 mem1) ]
 end
 
 to dridriTeamBaseCreate [ b ]
