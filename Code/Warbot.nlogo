@@ -1478,7 +1478,7 @@ PLOT
 387
 1401
 546
-plot 3
+#harvesters, #soldats
 NIL
 NIL
 0.0

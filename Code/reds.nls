@@ -352,7 +352,7 @@ to dridriTeamBaseAssignPatchesToHarvestingHarvesters
   [
     ;Tant que tous les harvesters n'ont pas reçu de patch,
    	;on recalcule des patchs à donner
-    if [ i >= length attributedPatches ]
+    if i >= length attributedPatches
   	[
       set seedNumber (seedNumber + 1)
       set possiblePatches (allPatches with [ count Seeds-here = seedNumber ]) with [ (count assignedHarvesters with [ mem5 = myself ]) = 0 ]
