@@ -352,7 +352,7 @@ to dridriTeamBaseAssignPatchesToHarvestingHarvesters
   [
     ;Tant que tous les harvesters n'ont pas reçu de patch,
    	;on recalcule des patchs à donner
-    if i >= length attributedPatches
+    while [ i >= length attributedPatches ]
   	[
       set seedNumber (seedNumber + 1)
       set possiblePatches (allPatches with [ count Seeds-here = seedNumber ]) with [ (count assignedHarvesters with [ mem5 = myself ]) = 0 ]
@@ -548,7 +548,7 @@ to dridriTeamBaseGiveEnergy
 end
 
 to goRedBase
-  ;Toutes les 500 ticks on remet ç jour le cache des patches utilisables
+  ;Toutes les 500 ticks on remet à jour le cache des patches utilisables
   if ticks mod 500 = 0 [ set mem9 (patches in-radius detection-range) with [ (not any? Bases-here) and (not any? Walls-here)] ]
 
   dridriTeamBaseAssignPatchesToHarvestingHarvesters
