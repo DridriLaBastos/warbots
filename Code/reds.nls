@@ -90,9 +90,11 @@ to dridriTeamExplorerRevealFood
 end
 
 to goRedExplorer
+  profiler:start
   if mem0 = 0 [ dridriTeamExplorerSearchEnemyBases ]
   if mem0 = 1 [ dridriTeamExplorerRevealEnemyBase ]
   dridriTeamExplorerRevealFood
+  profiler:stop
 end
 
 ;;;;;;;;;;;;;;;;;;;;;
@@ -183,6 +185,7 @@ to dridriTeamSoldierReturnBase
 end
 
 to goRedRocketLauncher
+  profiler:start
   ;On essaie toujours de lancer nos deux fafs sur les robots énemis l'on croise
   let ennemyAround perceive-specific-robots ennemy RocketLaunchers
   if not any? ennemyAround [ set ennemyAround perceive-specific-robots ennemy Harvesters ]
@@ -213,6 +216,7 @@ to goRedRocketLauncher
     dridriTeamSoldierAttack
   ]
   if mem0 = 4 [ dridriTeamSoldierReturnBase ]
+  profiler:stop
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -318,6 +322,7 @@ end
 
 ;Se déplace aléatoirement. Quand ils trouvent de la nourriture en donne 80% à la base et plante ce qui reste
 to goRedHarvester
+  profiler:start
   dridriTeamHarvesterRevealFoodPosition
   
   let wallsAround perceive-walls
@@ -333,6 +338,7 @@ to goRedHarvester
   if mem0 = 1 [ dridriTeamHarvesterComeToBase ]
   if mem0 = 2 [ dridriTeamHarvesterPlantSeeds ]
   if mem0 = 3 [ dridriTeamHarvesterFeedBase ]
+  profiler:stop
 end
 
 ;;;;;;;;;;;;;;;;;;
