@@ -168,6 +168,7 @@ end
 to setup [ config ]
   ; efface tout
   clear-all
+  profiler:reset
   init-parameters
 
   ; paramètres generaux
